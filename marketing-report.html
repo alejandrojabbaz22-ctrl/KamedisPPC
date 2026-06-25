@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Performance Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a1f35 0%, #0d1526 100%);
+    border-bottom: 1px solid #2d3748;
+    padding: 20px 40px;
+  }
+  header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+  header p { font-size: 12px; color: #475569; margin-top: 4px; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  .step { background: #141824; border: 1px solid #1e2a3a; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: #1e2a3a; color: #94a3b8; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-num.done { background: #14532d; color: #22c55e; }
+  .step-title { font-size: 14px; font-weight: 700; color: #e2e8f0; }
+  .step-sub { font-size: 12px; color: #475569; margin-top: 2px; }
+
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1e2a3a; border: 1.5px dashed #334155;
+    color: #94a3b8; padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .upload-btn:hover { border-color: #4f46e5; color: #a5b4fc; background: #1a1f35; }
+  .upload-btn.loaded { border-style: solid; border-color: #22c55e; color: #22c55e; background: #0f2818; }
+  input[type=file] { display: none; }
+
+  .mapper { margin-top: 16px; display: none; }
+  .mapper.visible { display: block; }
+  .mapper-grid { display: grid; gap: 10px; }
+  .mapper-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
+  .mapper-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .mapper-label span { display: block; font-size: 11px; color: #475569; font-weight: 400; margin-top: 2px; }
+
+  select {
+    width: 100%; background: #0f1117; border: 1px solid #2d3748;
+    color: #e2e8f0; padding: 8px 10px; border-radius: 6px;
+    font-size: 12px; cursor: pointer;
+  }
+  select:focus { outline: none; border-color: #4f46e5; }
+  select option { background: #141824; }
+
+  .preview-wrap { margin-top: 14px; overflow-x: auto; max-height: 160px; overflow-y: auto; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .preview-table th { background: #1e2a3a; color: #94a3b8; padding: 6px 10px; text-align: right; font-weight: 600; position: sticky; top: 0; }
+  .preview-table td { padding: 5px 10px; border-bottom: 1px solid #1a2030; color: #64748b; }
+  .preview-table tr:nth-child(even) td { background: #0f1520; }
+  .col-highlight { color: #a5b4fc !important; font-weight: 600; }
+
+  .btn-generate {
+    display: block; width: 100%; margin-top: 24px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; border: none; padding: 16px;
+    border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s; letter-spacing: 0.5px;
+  }
+  .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-generate:not(:disabled):hover { opacity: 0.88; }
+
+  #report { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: none; }
+
+  .report-header { display: flex; justify-content: space-between; align-items: center; margin: 40px 0 28px; padding-bottom: 18px; border-bottom: 1px solid #1e2a3a; }
+  .report-header h2 { font-size: 24px; font-weight: 800; color: #fff; }
+  .report-date { font-size: 12px; color: #475569; }
+
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #4f46e5; margin: 28px 0 12px; padding-right: 10px; border-right: 3px solid #4f46e5; }
+
+  .cards-grid { display: grid; gap: 14px; }
+  .cols-3 { grid-template-columns: repeat(3,1fr); }
+  .cols-4 { grid-template-columns: repeat(4,1fr); }
+  .cols-2 { grid-template-columns: repeat(2,1fr); }
+
+  .card { background: #141824; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px 20px 20px; position: relative; overflow: hidden; transition: transform 0.15s; }
+  .card:hover { transform: translateY(-2px); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent,#4f46e5); }
+  .card-icon { font-size: 18px; margin-bottom: 10px; opacity: 0.9; }
+  .card-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #e2e8f0; margin-bottom: 8px; }
+  .card-value { font-size: 30px; font-weight: 800; color: #fff; line-height: 1.05; }
+  .card-sub { font-size: 12px; color: #f8fafc; margin-top: 8px; }
+  .bar-wrap { margin-top: 12px; background: #1e2a3a; border-radius: 3px; height: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent,#4f46e5); }
+
+  .accent-blue   { --accent:#3b82f6; }
+  .accent-violet { --accent:#8b5cf6; }
+  .accent-green  { --accent:#22c55e; }
+  .accent-orange { --accent:#f59e0b; }
+  .accent-red    { --accent:#ef4444; }
+  .accent-cyan   { --accent:#06b6d4; }
+  .accent-pink   { --accent:#ec4899; }
+  .accent-teal   { --accent:#14b8a6; }
+
+  .badge-na { display:inline-block; background:#2d1b1b; color:#ef4444; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; }
+  hr.divider { border:none; border-top:1px solid #1e2a3a; margin:28px 0; }
+  .footer-note { text-align:center; font-size:11px; color:#334155; margin-top:36px; padding-top:16px; border-top:1px solid #1e2a3a; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 Marketing Performance Dashboard</h1>
+  <p>העלה את הקבצים, האפליקציה תאתר את העמודות אוטומטית, וקבל דו"ח מסכם</p>
+</header>
+
+<div class="container">
+
+  <!-- GOOGLE -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-google">1</div>
+      <div style="flex:1">
+        <div class="step-title">🔍 Google Campaigns Report</div>
+        <div class="step-sub">קובץ דוח קמפיינים של Google Ads</div>
+      </div>
+      <label class="upload-btn" id="btn-google">
+        📂 העלה קובץ
+        <input type="file" id="file-google" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-google">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודה הנכונה תיבחר באופן אוטומטי</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-google"></table></div>
+    </div>
+  </div>
+
+  <!-- FACEBOOK -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-fb">2</div>
+      <div style="flex:1">
+        <div class="step-title">📘 Facebook / Instagram Campaigns Report</div>
+        <div class="step-sub">קובץ דוח קמפיינים של Meta</div>
+      </div>
+      <label class="upload-btn" id="btn-fb">
+        📂 העלה קובץ
+        <input type="file" id="file-fb" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-fb">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודה הנכונה תיבחר באופן אוטומטי</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-fb"></table></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-cu">3</div>
+      <div style="flex:1">
+        <div class="step-title">👥 New vs Returning Customers</div>
+        <div class="step-sub">קובץ לקוחות חדשים מול חוזרים (Shopify)</div>
+      </div>
+      <label class="upload-btn" id="btn-cu">
+        📂 העלה קובץ
+        <input type="file" id="file-cu" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-cu">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודות יזוהו ללא בחירה ידנית</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-cu"></table></div>
+    </div>
+  </div>
+
+  <button class="btn-generate" id="btn-generate" disabled onclick="generateReport()">
+    🚀 Generate Report
+  </button>
+</div>
+
+<div id="report"></div>
+
+<script>
+const data = { google: null, fb: null, cu: null };
+
+function parseFile(file) {
+  return new Promise((res) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      res(normalizeRows(rows));
+    };
+    reader.readAsBinaryString(file);
+  });
+}
+
+function colLetter(i) {
+  let s = ''; i++;
+  while (i > 0) { s = String.fromCharCode(64+(i%26||26))+s; i=Math.floor((i-1)/26); }
+  return s;
+}
+
+function normalizeRows(rows) {
+  if (!rows || !rows.length) return rows;
+  const cleaned = rows.map(r => Array.isArray(r) ? r : [r]);
+  let headerIdx = 0;
+  for (let i = 0; i < cleaned.length; i++) {
+    const row = cleaned[i];
+    const nonEmptyCount = row.filter(cell => String(cell).trim() !== '').length;
+    if (nonEmptyCount >= 2) { headerIdx = i; break; }
+  }
+  const header = (cleaned[headerIdx] || []).map(cell => String(cell || '').trim());
+  const output = [header];
+  for (let i = headerIdx + 1; i < cleaned.length; i++) {
+    const row = cleaned[i];
+    const normalized = header.map((_, idx) => row[idx] !== undefined ? row[idx] : '');
+    const nonEmpty = normalized.filter(cell => String(cell).trim() !== '').length;
+    if (nonEmpty < 2) continue;
+    output.push(normalized);
+  }
+  return output;
+}
+
+function findHeaderIndex(headers, keywords) {
+  const normalized = headers.map(h => String(h || '').trim().toLowerCase());
+  for (const keyword of keywords) {
+    const key = keyword.toLowerCase();
+    const idx = normalized.findIndex(h => h === key);
+    if (idx !== -1) return idx;
+  }
+  for (const keyword of keywords) {
+    const key = keyword.toLowerCase();
+    const idx = normalized.findIndex(h => h.includes(key));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+function detectCustomerValues(rows, typeCol) {
+  if (typeCol === -1) return { newVal: null, retVal: null };
+  const values = [...new Set(rows.slice(1).map(r => String(r[typeCol] || '').trim()).filter(Boolean))];
+  let newVal = null;
+  let retVal = null;
+  for (const v of values) {
+    const lower = v.toLowerCase();
+    if (!newVal && lower.includes('new')) newVal = v;
+    if (!retVal && lower.includes('return')) retVal = v;
+  }
+  if (!newVal && values.length >= 1) newVal = values[0];
+  if (!retVal && values.length >= 2) retVal = values[1];
+  return { newVal, retVal };
+}
+
+function renderPreview(tableId, rows, hilite) {
+  const table = document.getElementById(tableId);
+  if (!rows || !rows.length) { table.innerHTML=''; return; }
+  const hdrs = rows[0];
+  let html = '<thead><tr>'+hdrs.map((h,i)=>`<th class="${hilite.includes(i)?'col-highlight':''}">${colLetter(i)}: ${h||'—'}</th>`).join('')+'</tr></thead><tbody>';
+  for (let r=1; r<Math.min(rows.length,7); r++)
+    html += '<tr>'+rows[r].map((v,i)=>`<td class="${hilite.includes(i)?'col-highlight':''}">${v}</td>`).join('')+'</tr>';
+  table.innerHTML = html+'</tbody>';
+}
+
+// ── File uploads ──────────────────────────────────────────────────────────────
+document.getElementById('file-google').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const costIdx = findHeaderIndex(rows[0] || [], ['amount spent', 'amount spent (ils)', 'cost', 'spent', 'total cost']);
+  data.google = { rows, costIdx };
+  document.getElementById('btn-google').className = 'upload-btn loaded';
+  document.getElementById('btn-google').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-google').classList.add('visible');
+  document.getElementById('num-google').className = 'step-num done';
+  document.getElementById('num-google').textContent = '✓';
+  renderPreview('prev-google', rows, costIdx !== -1 ? [costIdx] : []);
+  updateReady();
+});
+
+document.getElementById('file-fb').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const spendIdx = findHeaderIndex(rows[0] || [], ['amount spent', 'amount spent (ils)', 'spend', 'cost', 'sum']);
+  data.fb = { rows, spendIdx };
+  document.getElementById('btn-fb').className = 'upload-btn loaded';
+  document.getElementById('btn-fb').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-fb').classList.add('visible');
+  document.getElementById('num-fb').className = 'step-num done';
+  document.getElementById('num-fb').textContent = '✓';
+  renderPreview('prev-fb', rows, spendIdx !== -1 ? [spendIdx] : []);
+  updateReady();
+});
+
+document.getElementById('file-cu').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const typeIdx = findHeaderIndex(rows[0] || [], ['new or returning customer', 'customer type', 'type', 'new or returning', 'status']);
+  const salesIdx = findHeaderIndex(rows[0] || [], ['net sales', 'sales', 'net revenue']);
+  const ordersIdx = findHeaderIndex(rows[0] || [], ['orders', 'order']);
+  const countIdx = findHeaderIndex(rows[0] || [], ['customers', 'customer', 'count']);
+  const { newVal, retVal } = detectCustomerValues(rows, typeIdx);
+  data.cu = { rows, typeIdx, salesIdx, ordersIdx, countIdx, newVal, retVal };
+  document.getElementById('btn-cu').className = 'upload-btn loaded';
+  document.getElementById('btn-cu').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-cu').classList.add('visible');
+  document.getElementById('num-cu').className = 'step-num done';
+  document.getElementById('num-cu').textContent = '✓';
+  renderPreview('prev-cu', rows, [typeIdx, salesIdx, ordersIdx, countIdx].filter(i=>i!==-1));
+  updateReady();
+});
+
+function parseNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  let str = String(value).trim();
+  if (!str) return null;
+  str = str.replace(/[^0-9,\.\-]/g, '');
+  const hasComma = str.indexOf(',') !== -1;
+  const hasDot = str.indexOf('.') !== -1;
+  if (hasComma && hasDot) str = str.replace(/,/g, '');
+  else if (hasComma) str = str.replace(/,/g, '.');
+  const num = parseFloat(str);
+  return Number.isFinite(num) ? num : null;
+}
+
+function updateReady() {
+  const ok = data.google && data.google.costIdx !== -1
+    && data.fb && data.fb.spendIdx !== -1
+    && data.cu && data.cu.typeIdx !== -1
+    && data.cu.salesIdx !== -1
+    && data.cu.ordersIdx !== -1
+    && data.cu.countIdx !== -1;
+  document.getElementById('btn-generate').disabled = !ok;
+}
+
+// ── Compute ───────────────────────────────────────────────────────────────────
+function sumCol(rows, col) {
+  let t = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const v = parseNumber(rows[i][col]);
+    if (v !== null) t += v;
+  }
+  return t;
+}
+function sumByType(rows, typeCol, typeVal, valCol) {
+  let t = 0, found = false;
+  const normalizedType = String(typeVal || '').trim().toLowerCase();
+  for (let i = 1; i < rows.length; i++) {
+    const rowType = String(rows[i][typeCol] || '').trim().toLowerCase();
+    if (rowType === normalizedType) {
+      const v = parseNumber(rows[i][valCol]);
+      if (v !== null) { t += v; found = true; }
+    }
+  }
+  return found ? t : null;
+}
+
+function generateReport() {
+  const gC  = data.google.costIdx;
+  const fbS = data.fb.spendIdx;
+  const cuT = data.cu.typeIdx;
+  const cuSal= data.cu.salesIdx;
+  const cuOrd= data.cu.ordersIdx;
+  const cuCnt= data.cu.countIdx;
+  const nVal = data.cu.newVal;
+  const rVal = data.cu.retVal;
+
+  const googleSpend = sumCol(data.google.rows, gC);
+  const fbSpend     = sumCol(data.fb.rows, fbS);
+  const tiktokSpend = null;
+  const totalSpend  = googleSpend + fbSpend + (tiktokSpend || 0);
+  const adSpendForROI = googleSpend + fbSpend;
+
+  const newNetSales = sumByType(data.cu.rows, cuT, nVal, cuSal);
+  const retNetSales = sumByType(data.cu.rows, cuT, rVal, cuSal);
+  const newOrders   = sumByType(data.cu.rows, cuT, nVal, cuOrd);
+  const retOrders   = sumByType(data.cu.rows, cuT, rVal, cuOrd);
+  const newCust     = sumByType(data.cu.rows, cuT, nVal, cuCnt);
+  const retCust     = sumByType(data.cu.rows, cuT, rVal, cuCnt);
+
+  const netSales    = (newNetSales||0)+(retNetSales||0);
+  const totalOrders = (newOrders||0)+(retOrders||0);
+  const totalCust   = (newCust||0)+(retCust||0);
+
+  renderReport({
+    googleSpend, fbSpend, totalSpend, netSales, totalOrders,
+    costPerConv: totalOrders ? totalSpend/totalOrders : null,
+    cacNew:      newCust     ? totalSpend/newCust     : null,
+    roi:         adSpendForROI && netSales ? netSales/adSpendForROI : null,
+    newCust, retCust, newNetSales, retNetSales, totalCust,
+    pctNew: totalCust ? (newCust||0)/totalCust : null,
+    pctRet: totalCust ? (retCust||0)/totalCust : null,
+    aovNew: newOrders ? newNetSales/newOrders  : null,
+    aovRet: retOrders ? retNetSales/retOrders  : null,
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const fmt$  = v => v==null ? '<span class="badge-na">N/A</span>' : '₪'+Math.round(v).toLocaleString('en-US');
+const fmtN  = v => v==null ? '<span class="badge-na">N/A</span>' : Math.round(v).toLocaleString('en-US');
+const fmtPct= v => v==null ? '<span class="badge-na">N/A</span>' : (v*100).toFixed(1)+'%';
+const fmtX  = v => v==null ? '<span class="badge-na">N/A</span>' : v.toFixed(2)+'x';
+const fmtAov= v => v==null ? '<span class="badge-na">N/A</span>' : '₪'+v.toFixed(2);
+
+function card(icon,label,val,sub,accent,barPct) {
+  const bar = barPct!=null ? `<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,barPct*100).toFixed(1)}%"></div></div>` : '';
+  return `<div class="card ${accent}"><div class="card-icon">${icon}</div><div class="card-label">${label}</div><div class="card-value">${val}</div>${sub?`<div class="card-sub">${sub}</div>`:''}${bar}</div>`;
+}
+
+function renderReport(d) {
+  const today = new Date().toLocaleDateString('he-IL',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('report').innerHTML = `
+  <div style="max-width:960px;margin:0 auto;padding:0 24px 60px">
+    <div class="report-header">
+      <h2>Performance Summary</h2>
+      <div class="report-date">נוצר ב-${today}</div>
+    </div>
+
+    <div class="section-label">💸 Advertising Spend</div>
+    <div class="cards-grid cols-4">
+      ${card('🔍','Total Google Spend',  fmt$(d.googleSpend),'Google Campaigns','accent-blue')}
+      ${card('📘','Total FB / IG Spend', fmt$(d.fbSpend),    'Facebook & Instagram','accent-violet')}
+      ${card('🎬','Total TikTok Spend',  fmt$(d.tiktokSpend), 'No TikTok data detected','accent-cyan')}
+      ${card('💰','Total Spend — All Platforms', fmt$(d.totalSpend), 'Google + Meta + TikTok','accent-orange')}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">📈 Sales & Efficiency</div>
+    <div class="cards-grid cols-4">
+      ${card('🛒','Net Sales',      fmt$(d.netSales),    'New + Returning',      'accent-green')}
+      ${card('📦','Orders',         fmtN(d.totalOrders), 'Total orders',         'accent-cyan')}
+      ${card('🎯','Cost per Conv.', fmt$(d.costPerConv), 'Total Spend / Orders', 'accent-orange')}
+      ${card('📊','ROI',            fmtX(d.roi),         'Total Spend / Net Sales', d.roi&&d.roi<1?'accent-red':'accent-green')}
+    </div>
+    <div class="cards-grid cols-2" style="margin-top:14px">
+      ${card('🆕','CAC — New Customers', fmt$(d.cacNew),     'Total Spend / # New Customers','accent-pink')}
+      ${card('✅','Cost per Order',      fmt$(d.costPerConv),'Efficiency per purchase','accent-teal')}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">👥 Customer Breakdown</div>
+    <div class="cards-grid cols-4">
+      ${card('🔁','# Returning Customers', fmtN(d.retCust),     '','accent-blue',   d.pctRet)}
+      ${card('🆕','# New Customers',       fmtN(d.newCust),     '','accent-violet',  d.pctNew)}
+      ${card('💵','Net Sales — Returning', fmt$(d.retNetSales), '','accent-green')}
+      ${card('💵','Net Sales — New',       fmt$(d.newNetSales), '','accent-cyan')}
+    </div>
+    <div class="cards-grid cols-2" style="margin-top:14px">
+      ${card('📏','% Existing Customers', fmtPct(d.pctRet), `${fmtN(d.retCust)} מתוך ${fmtN(d.totalCust)}`,'accent-blue',   d.pctRet)}
+      ${card('📏','% New Customers',      fmtPct(d.pctNew), `${fmtN(d.newCust)} מתוך ${fmtN(d.totalCust)}`,'accent-violet',  d.pctNew)}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">🛍️ Average Order Value (Net AOV)</div>
+    <div class="cards-grid cols-2">
+      ${card('🆕','Net AOV — New Customers',       fmtAov(d.aovNew),'Net Sales New / Orders New',       'accent-pink')}
+      ${card('🔁','Net AOV — Returning Customers', fmtAov(d.aovRet),'Net Sales Returning / Orders Ret.','accent-teal')}
+    </div>
+
+    <div class="footer-note">AI Studio Performance Dashboard · נוצר אוטומטית מהקבצים שהועלו</div>
+  </div>`;
+  document.getElementById('report').style.display = 'block';
+  document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
