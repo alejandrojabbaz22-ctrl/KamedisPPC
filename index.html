@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Performance Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a1f35 0%, #0d1526 100%);
+    border-bottom: 1px solid #2d3748;
+    padding: 20px 40px;
+  }
+  header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+  header p { font-size: 12px; color: #475569; margin-top: 4px; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  .step { background: #141824; border: 1px solid #1e2a3a; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: #1e2a3a; color: #94a3b8; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-num.done { background: #14532d; color: #22c55e; }
+  .step-title { font-size: 14px; font-weight: 700; color: #e2e8f0; }
+  .step-sub { font-size: 12px; color: #475569; margin-top: 2px; }
+
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1e2a3a; border: 1.5px dashed #334155;
+    color: #94a3b8; padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .upload-btn:hover { border-color: #4f46e5; color: #a5b4fc; background: #1a1f35; }
+  .upload-btn.loaded { border-style: solid; border-color: #22c55e; color: #22c55e; background: #0f2818; }
+  input[type=file] { display: none; }
+
+  .mapper { margin-top: 16px; display: none; }
+  .mapper.visible { display: block; }
+  .mapper-grid { display: grid; gap: 10px; }
+  .mapper-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
+  .mapper-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .mapper-label span { display: block; font-size: 11px; color: #475569; font-weight: 400; margin-top: 2px; }
+
+  select {
+    width: 100%; background: #0f1117; border: 1px solid #2d3748;
+    color: #e2e8f0; padding: 8px 10px; border-radius: 6px;
+    font-size: 12px; cursor: pointer;
+  }
+  select:focus { outline: none; border-color: #4f46e5; }
+  select option { background: #141824; }
+
+  .preview-wrap { margin-top: 14px; overflow-x: auto; max-height: 160px; overflow-y: auto; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .preview-table th { background: #1e2a3a; color: #94a3b8; padding: 6px 10px; text-align: right; font-weight: 600; position: sticky; top: 0; }
+  .preview-table td { padding: 5px 10px; border-bottom: 1px solid #1a2030; color: #64748b; }
+  .preview-table tr:nth-child(even) td { background: #0f1520; }
+  .col-highlight { color: #a5b4fc !important; font-weight: 600; }
+
+  .btn-generate {
+    display: block; width: 100%; margin-top: 24px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; border: none; padding: 16px;
+    border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s; letter-spacing: 0.5px;
+  }
+  .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-generate:not(:disabled):hover { opacity: 0.88; }
+  .download-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 16px; }
+  .download-btn { border: 1px solid #3b82f6; background: #1e3a8a; color: #fff; padding: 10px 18px; border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
+  .download-btn:hover:not(:disabled) { background: #2563eb; }
+  .download-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .generated #page-overview .step,
+  .generated #page-overview .btn-generate {
+    display: none !important;
+  }
+
+  #report { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: none; }
+
+  .report-header { display: flex; justify-content: space-between; align-items: center; margin: 40px 0 28px; padding-bottom: 18px; border-bottom: 1px solid #1e2a3a; }
+  .report-header h2 { font-size: 24px; font-weight: 800; color: #fff; }
+  .report-date { font-size: 12px; color: #475569; }
+
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #4f46e5; margin: 28px 0 12px; padding-right: 10px; border-right: 3px solid #4f46e5; }
+
+  .cards-grid { display: grid; gap: 14px; }
+  .cols-3 { grid-template-columns: repeat(3,1fr); }
+  .cols-4 { grid-template-columns: repeat(4,1fr); }
+  .cols-2 { grid-template-columns: repeat(2,1fr); }
+
+  .card { background: #141824; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px 20px 20px; position: relative; overflow: hidden; transition: transform 0.15s; }
+  .card:hover { transform: translateY(-2px); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent,#4f46e5); }
+  .card-icon { font-size: 18px; margin-bottom: 10px; opacity: 0.9; }
+  .card-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #e2e8f0; margin-bottom: 8px; }
+  .card-value { font-size: 30px; font-weight: 800; color: #fff; line-height: 1.05; }
+  .card-sub { font-size: 12px; color: #f8fafc; margin-top: 8px; }
+  .bar-wrap { margin-top: 12px; background: #1e2a3a; border-radius: 3px; height: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent,#4f46e5); }
+
+  .accent-blue   { --accent:#3b82f6; }
+  .accent-violet { --accent:#8b5cf6; }
+  .accent-green  { --accent:#22c55e; }
+  .accent-orange { --accent:#f59e0b; }
+  .accent-red    { --accent:#ef4444; }
+  .accent-cyan   { --accent:#06b6d4; }
+  .accent-pink   { --accent:#ec4899; }
+  .accent-teal   { --accent:#14b8a6; }
+
+  .badge-na { display:inline-block; background:#2d1b1b; color:#ef4444; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; }
+  hr.divider { border:none; border-top:1px solid #1e2a3a; margin:28px 0; }
+  .footer-note { text-align:center; font-size:11px; color:#334155; margin-top:36px; padding-top:16px; border-top:1px solid #1e2a3a; }
+
+  .page-tabs { display: flex; gap: 12px; margin: 24px auto 0; max-width: 900px; padding: 0 24px; }
+  .page-tab {
+    flex: 1; text-align: center; padding: 12px 16px; border-radius: 12px;
+    background: #141824; border: 1px solid #1e2a3a; color: #94a3b8; cursor: pointer; font-weight: 700;
+  }
+  .page-tab.active { background: #0f172a; color: #fff; border-color: #4f46e5; }
+  .page-panel { display: none; }
+  .page-panel.active { display: block; }
+  .data-section { margin-top: 18px; }
+  .chart-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); margin-top: 18px; }
+  .chart-card { background: #141824; border: 1px solid #1e2a3a; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; align-items: center; }
+  .chart-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 10px; text-align: center; }
+  .chart-subtitle { font-size: 11px; color: #94a3b8; margin-bottom: 10px; text-align: center; }
+  .chart-total { font-size: 13px; color: #fff; margin-bottom: 16px; text-align: center; font-weight: 700; }
+  .pie-legend { display: grid; gap: 8px; margin-top: 18px; font-size: 12px; color: #cbd5e1; width: 100%; align-items: start; }
+  .product-filter { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; padding: 0; }
+  .filter-btn { border: 1px solid #475569; background: #0f172a; color: #cbd5e1; padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 700; transition: all 0.2s ease; }
+  .filter-btn:hover { border-color: #94a3b8; color: #fff; }
+  .filter-btn.active { background: #1f2937; border-color: #4f46e5; color: #fff; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-color { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .pie-svg { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
+  .chart-note { margin-top: 12px; color: #94a3b8; font-size: 12px; line-height: 1.4; }
+
+  .data-section h3 { font-size: 14px; margin-bottom: 10px; color: #fff; }
+  .data-table { width: 100%; min-width: 1600px; border-collapse: collapse; margin-top: 10px; }
+  .data-table th, .data-table td { border: 1px solid #1e2a3a; padding: 10px; font-size: 12px; color: #e2e8f0; }
+  .data-table th { background: #1e2a3a; color: #94a3b8; text-align: right; }
+  .data-table tbody tr:nth-child(even) { background: #0f1520; }
+  .data-table tbody tr:hover { background: #111827; }
+  #page-ppc .container { max-width: 1600px; }
+
+  #page-facebook .container { max-width: 1600px; }
+
+  #page-products .container { max-width: 1600px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 Marketing Performance Dashboard</h1>
+  <p>העלה את הקבצים, האפליקציה תאתר את העמודות אוטומטית, וקבל דו"ח מסכם</p>
+</header>
+
+<div class="page-tabs">
+  <div class="page-tab active" data-page="page-overview" onclick="showPage('page-overview')">OVERVIEW</div>
+  <div class="page-tab" data-page="page-ppc" onclick="showPage('page-ppc')">PPC GOOGLE</div>
+  <div class="page-tab" data-page="page-facebook" onclick="showPage('page-facebook')">PPC FACEBOOK</div>
+  <div class="page-tab" data-page="page-products" onclick="showPage('page-products')">Products Performance</div>
+</div>
+
+<div class="page-panel active" id="page-overview">
+<div class="container">
+
+  <!-- GOOGLE -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-google">1</div>
+      <div style="flex:1">
+        <div class="step-title">🔍 Google Campaigns Report</div>
+        <div class="step-sub">קובץ דוח קמפיינים של Google Ads</div>
+      </div>
+      <label class="upload-btn" id="btn-google">
+        📂 העלה קובץ
+        <input type="file" id="file-google" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-google">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודה הנכונה תיבחר באופן אוטומטי</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-google"></table></div>
+    </div>
+  </div>
+
+  <!-- FACEBOOK -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-fb">2</div>
+      <div style="flex:1">
+        <div class="step-title">📘 Facebook / Instagram Campaigns Report</div>
+        <div class="step-sub">קובץ דוח קמפיינים של Meta</div>
+      </div>
+      <label class="upload-btn" id="btn-fb">
+        📂 העלה קובץ
+        <input type="file" id="file-fb" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-fb">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודה הנכונה תיבחר באופן אוטומטי</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-fb"></table></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-cu">3</div>
+      <div style="flex:1">
+        <div class="step-title">👥 New vs Returning Customers</div>
+        <div class="step-sub">קובץ לקוחות חדשים מול חוזרים (Shopify)</div>
+      </div>
+      <label class="upload-btn" id="btn-cu">
+        📂 העלה קובץ
+        <input type="file" id="file-cu" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-cu">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודות יזוהו ללא בחירה ידנית</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-cu"></table></div>
+    </div>
+  </div>
+
+  <div class="download-actions">
+    <button class="download-btn" id="btn-download-pdf" disabled onclick="downloadReportPdf()">PDF להורדה</button>
+    <button class="download-btn" id="btn-download-xlsx" disabled onclick="downloadAllDataExcel()">אקסל להורדה</button>
+  </div>
+  <button class="btn-generate" id="btn-generate" disabled onclick="generateReport()">
+    🚀 Generate Report
+  </button>
+</div>
+</div>
+
+<div class="page-panel" id="page-ppc">
+  <div class="container">
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div style="flex:1">
+          <div class="step-title">📌 PPC GOOGLE</div>
+          <div class="step-sub">העלה את הקובץ של CLAUDE CODE ALE Performance by marketing channel כדי לראות טבלאות Google Campaigns</div>
+        </div>
+        <label class="upload-btn" id="btn-ppc">
+          📂 העלה קובץ CLAUDE
+          <input type="file" id="file-ppc" accept=".xlsx,.xls,.csv">
+        </label>
+      </div>
+      <div class="mapper visible" id="mapper-ppc">
+        <div class="mapper-grid">
+          <div class="mapper-row">
+            <div class="mapper-label">קובץ CLAUDE<span>הקובץ חייב להכיל את המילים CLAUDE CODE ALE Performance by marketing channel</span></div>
+          </div>
+        </div>
+        <div class="preview-wrap"><table class="preview-table" id="prev-ppc"></table></div>
+      </div>
+    </div>
+    <div id="ppc-tables" class="data-section"></div>
+  </div>
+</div>
+
+<div class="page-panel" id="page-facebook">
+  <div class="container">
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div style="flex:1">
+          <div class="step-title">📘 Facebook Campaigns</div>
+          <div class="step-sub">טבלאות עבור קמפיינים מפולחים לפי COLD/WARM/HOT/SPECIAL</div>
+        </div>
+        <!-- reuse existing FB upload button in Overview; this panel only shows results -->
+      </div>
+      <div class="mapper visible" id="mapper-facebook">
+        <div class="preview-wrap"><table class="preview-table" id="prev-facebook"></table></div>
+      </div>
+    </div>
+    <div id="fb-tables" class="data-section"></div>
+  </div>
+</div>
+
+<div class="page-panel" id="page-products">
+  <div class="container">
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div style="flex:1">
+          <div class="step-title">📦 Products Performance</div>
+          <div class="step-sub">העלה את הקובץ CLAUDE CODE ALE Total sales by product shopify כדי לראות ביצועים לפי סדרות מוצר</div>
+        </div>
+        <label class="upload-btn" id="btn-products">
+          📂 העלה קובץ Products
+          <input type="file" id="file-products" accept=".xlsx,.xls,.csv">
+        </label>
+      </div>
+      <div class="mapper visible" id="mapper-products">
+        <div class="mapper-grid">
+          <div class="mapper-row">
+            <div class="mapper-label">עמודות נתונים אוטומטיות<span>העמודה הנכונה תיבחר באופן אוטומטי</span></div>
+          </div>
+        </div>
+        <div class="preview-wrap"><table class="preview-table" id="prev-products"></table></div>
+      </div>
+    </div>
+    <div id="product-charts" class="chart-grid"></div>
+    <div class="product-filter" id="product-filter-controls">
+      <button class="filter-btn active" data-filter="ALL" onclick="setProductFilter('ALL')">ALL</button>
+      <button class="filter-btn" data-filter="RETURNING" onclick="setProductFilter('RETURNING')">RETURNING</button>
+      <button class="filter-btn" data-filter="NEW" onclick="setProductFilter('NEW')">NEW</button>
+      <button class="filter-btn" data-filter="ALL_TOGETHER" onclick="setProductFilter('ALL_TOGETHER')">ALL TOGETHER</button>
+    </div>
+    <div id="product-tables" class="data-section"></div>
+  </div>
+</div>
+
+<div id="report"></div>
+
+<script>
+const data = { google: null, fb: null, cu: null, ppc: null, products: null, productFilter: 'ALL' };
+
+function parseFile(file) {
+  const ext = String(file.name || '').split('.').pop().toLowerCase();
+  const isCsvLike = ext === 'csv' || ext === 'txt';
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let data = e.target.result;
+      if (isCsvLike && typeof data === 'string') {
+        const firstLine = String(data).split(/\r?\n/)[0] || '';
+        const tabCount = (firstLine.match(/\t/g) || []).length;
+        const semicolonCount = (firstLine.match(/;/g) || []).length;
+        const commaCount = (firstLine.match(/,/g) || []).length;
+        if (tabCount > commaCount) data = data.replace(/\t/g, ',');
+        else if (semicolonCount > commaCount) data = data.replace(/;/g, ',');
+      }
+      const wb = XLSX.read(data, { type: isCsvLike ? 'binary' : 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      res(normalizeRows(rows));
+    };
+    reader.onerror = (err) => rej(err);
+    if (isCsvLike) reader.readAsText(file, 'UTF-8');
+    else reader.readAsBinaryString(file);
+  });
+}
+
+async function parseProductsFile(file) {
+  const ext = String(file.name || '').split('.').pop().toLowerCase();
+  if (ext === 'xlsx' || ext === 'xls') {
+    const rows = await parseFile(file);
+    return rows;
+  }
+
+  const tryParseCsv = async (text) => {
+    let normalizedText = String(text || '');
+    const firstLine = normalizedText.split(/\r?\n/)[0] || '';
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    if (tabCount > commaCount) normalizedText = normalizedText.replace(/\t/g, ',');
+    else if (semicolonCount > commaCount) normalizedText = normalizedText.replace(/;/g, ',');
+    const wb = XLSX.read(normalizedText, { type: 'string' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return normalizeRows(XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }));
+  };
+
+  const textUtf8 = await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = () => rej(reader.error);
+    reader.readAsText(file, 'UTF-8');
+  });
+  let rows = await tryParseCsv(textUtf8);
+  let header = (rows[0] || []).join(' ').toLowerCase();
+  if (header.includes('product') || header.includes('שם') || header.includes('product title')) {
+    return rows;
+  }
+
+  try {
+    const buffer = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = () => rej(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+    const decoded = new TextDecoder('windows-1255').decode(buffer);
+    rows = tryParseCsv(decoded);
+    header = (await rows)[0] || [];
+    header = header.join(' ').toLowerCase();
+    if (header.includes('product') || header.includes('שם') || header.includes('product title')) {
+      return await rows;
+    }
+  } catch (e) {
+    console.warn('Products file decode fallback failed', e);
+  }
+  return await rows;
+}
+
+function colLetter(i) {
+  let s = ''; i++;
+  while (i > 0) { s = String.fromCharCode(64+(i%26||26))+s; i=Math.floor((i-1)/26); }
+  return s;
+}
+
+function normalizeRows(rows) {
+  if (!rows || !rows.length) return rows;
+  const cleaned = rows.map(r => Array.isArray(r) ? r : [r]);
+  let headerIdx = 0;
+  for (let i = 0; i < cleaned.length; i++) {
+    const row = cleaned[i];
+    const nonEmptyCount = row.filter(cell => String(cell).trim() !== '').length;
+    if (nonEmptyCount >= 2) { headerIdx = i; break; }
+  }
+  const header = (cleaned[headerIdx] || []).map(cell => String(cell || '').trim());
+  const output = [header];
+  for (let i = headerIdx + 1; i < cleaned.length; i++) {
+    const row = cleaned[i];
+    const normalized = header.map((_, idx) => row[idx] !== undefined ? row[idx] : '');
+    const nonEmpty = normalized.filter(cell => String(cell).trim() !== '').length;
+    if (nonEmpty < 2) continue;
+    output.push(normalized);
+  }
+  return output;
+}
+
+function findHeaderIndex(headers, keywords, fallback = -1) {
+  const normalized = headers.map(h => String(h || '').trim().toLowerCase());
+  for (const keyword of keywords) {
+    const key = keyword.toLowerCase();
+    const idx = normalized.findIndex(h => h === key);
+    if (idx !== -1) return idx;
+  }
+  for (const keyword of keywords) {
+    const key = keyword.toLowerCase();
+    const idx = normalized.findIndex(h => h.includes(key));
+    if (idx !== -1) return idx;
+  }
+  return fallback;
+}
+
+function detectCustomerValues(rows, typeCol) {
+  if (typeCol === -1) return { newVal: null, retVal: null };
+  const values = [...new Set(rows.slice(1).map(r => String(r[typeCol] || '').trim()).filter(Boolean))];
+  let newVal = null;
+  let retVal = null;
+  for (const v of values) {
+    const lower = v.toLowerCase();
+    if (!newVal && lower.includes('new')) newVal = v;
+    if (!retVal && lower.includes('return')) retVal = v;
+  }
+  if (!newVal && values.length >= 1) newVal = values[0];
+  if (!retVal && values.length >= 2) retVal = values[1];
+  return { newVal, retVal };
+}
+
+function renderPreview(tableId, rows, hilite) {
+  const table = document.getElementById(tableId);
+  if (!rows || !rows.length) { table.innerHTML=''; return; }
+  const hdrs = rows[0];
+  let html = '<thead><tr>'+hdrs.map((h,i)=>`<th class="${hilite.includes(i)?'col-highlight':''}">${colLetter(i)}: ${h||'—'}</th>`).join('')+'</tr></thead><tbody>';
+  for (let r=1; r<Math.min(rows.length,7); r++)
+    html += '<tr>'+rows[r].map((v,i)=>`<td class="${hilite.includes(i)?'col-highlight':''}">${v}</td>`).join('')+'</tr>';
+  table.innerHTML = html+'</tbody>';
+}
+
+// ── File uploads ──────────────────────────────────────────────────────────────
+document.getElementById('file-google').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const costIdx = findHeaderIndex(rows[0] || [], ['amount spent', 'amount spent (ils)', 'cost', 'spent', 'total cost']);
+  data.google = { rows, costIdx };
+  document.getElementById('btn-google').className = 'upload-btn loaded';
+  document.getElementById('btn-google').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-google').classList.add('visible');
+  document.getElementById('num-google').className = 'step-num done';
+  document.getElementById('num-google').textContent = '✓';
+  renderPreview('prev-google', rows, costIdx !== -1 ? [costIdx] : []);
+  if (data.ppc) renderPpcTables();
+  updateReady();
+});
+
+document.getElementById('file-fb').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const spendIdx = findHeaderIndex(rows[0] || [], ['amount spent', 'amount spent (ils)', 'spend', 'cost', 'sum']);
+  data.fb = { rows, spendIdx };
+  document.getElementById('btn-fb').className = 'upload-btn loaded';
+  document.getElementById('btn-fb').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-fb').classList.add('visible');
+  document.getElementById('num-fb').className = 'step-num done';
+  document.getElementById('num-fb').textContent = '✓';
+  renderPreview('prev-fb', rows, spendIdx !== -1 ? [spendIdx] : []);
+  updateReady();
+  if (data.ppc) renderFbTables();
+});
+
+document.getElementById('file-cu').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const typeIdx = findHeaderIndex(rows[0] || [], ['new or returning customer', 'customer type', 'type', 'new or returning', 'status']);
+  const salesIdx = findHeaderIndex(rows[0] || [], ['net sales', 'sales', 'net revenue']);
+  const ordersIdx = findHeaderIndex(rows[0] || [], ['orders', 'order']);
+  const countIdx = findHeaderIndex(rows[0] || [], ['customers', 'customer', 'count']);
+  const { newVal, retVal } = detectCustomerValues(rows, typeIdx);
+  data.cu = { rows, typeIdx, salesIdx, ordersIdx, countIdx, newVal, retVal };
+  document.getElementById('btn-cu').className = 'upload-btn loaded';
+  document.getElementById('btn-cu').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-cu').classList.add('visible');
+  document.getElementById('num-cu').className = 'step-num done';
+  document.getElementById('num-cu').textContent = '✓';
+  renderPreview('prev-cu', rows, [typeIdx, salesIdx, ordersIdx, countIdx].filter(i=>i!==-1));
+  updateReady();
+});
+
+document.getElementById('file-ppc').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseFile(f);
+  const headers = rows[0] || [];
+  const campaignIdx = findHeaderIndex(headers, ['campaign name','campaign','campaigns']);
+  const sessionsIdx = findHeaderIndex(headers, ['sessions','session']);
+  const ordersIdx = findHeaderIndex(headers, ['orders','order']);
+  const revenueShopifyIdx = findHeaderIndex(headers, ['revenue shopify','shopify revenue','revenue','sales']);
+  const ordersNewIdx = findHeaderIndex(headers, ['new orders','orders new','new customer','orders new customers','new customers']);
+  const ordersReturningIdx = findHeaderIndex(headers, ['returning orders','orders returning','returning customer','returning customers']);
+
+  data.ppc = {
+    rows,
+    fileName: f.name,
+    campaignIdx: campaignIdx !== -1 ? campaignIdx : 0,
+    sessionsIdx: sessionsIdx !== -1 ? sessionsIdx : 1,
+    ordersIdx: ordersIdx !== -1 ? ordersIdx : 3,
+    revenueShopifyIdx: revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12,
+    ordersNewIdx: ordersNewIdx !== -1 ? ordersNewIdx : 6,
+    ordersReturningIdx: ordersReturningIdx !== -1 ? ordersReturningIdx : 9,
+  };
+
+  document.getElementById('btn-ppc').className = 'upload-btn loaded';
+  document.getElementById('btn-ppc').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-ppc').classList.add('visible');
+  renderPreview('prev-ppc', rows, [data.ppc.campaignIdx, data.ppc.sessionsIdx, data.ppc.ordersIdx, data.ppc.revenueShopifyIdx].filter(i=>i!==-1));
+  if (data.google) renderPpcTables();
+  if (data.fb) renderFbTables();
+});
+
+document.getElementById('file-products').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = await parseProductsFile(f);
+  const headers = rows[0] || [];
+  const productIdx = findHeaderIndex(headers, ['product title','product name','product','שם מוצר','מוצר'], 0);
+  const itemsIdx = findHeaderIndex(headers, ['net items sold','items sold','quantity sold','items','מכירות'], 1);
+  const salesIdx = findHeaderIndex(headers, ['net sales','gross sales','sales','סכום','הכנסות','נטו'], 2);
+  const typeIdx = findHeaderIndex(headers, ['new or returning customer','customer type','type','new or returning','status','new/returning','customer status','order type','סוג לקוח','חדש','חוזר'], -1);
+  data.products = {
+    rows,
+    fileName: f.name,
+    productIdx: productIdx !== -1 ? productIdx : 0,
+    itemsIdx: itemsIdx !== -1 ? itemsIdx : 2,
+    salesIdx: salesIdx !== -1 ? salesIdx : 5,
+    typeIdx,
+  };
+  document.getElementById('btn-products').className = 'upload-btn loaded';
+  document.getElementById('btn-products').childNodes[0].textContent = '✓ '+f.name+' ';
+  document.getElementById('mapper-products').classList.add('visible');
+  renderPreview('prev-products', rows, [data.products.productIdx, data.products.itemsIdx, data.products.salesIdx].filter(i=>i!==-1));
+  renderProductCharts();
+  renderProductTables();
+});
+
+function renderProductCharts() {
+  const container = document.getElementById('product-charts');
+  if (!data.products) {
+    container.innerHTML = '<div class="chart-card"><div class="chart-title">OVERALL NET SALES BY COLLECTION</div><div class="chart-note">העלה תחילה קובץ Products כדי להציג גרף פאי.</div></div>';
+    return;
+  }
+  const seriesNames = ['SCALP','CALM','CLEAR','BIO BALANCE','T-ZONE','PSO'];
+  const seriesKeys = ['scalp','calm','clear','bio balance','t-zone','pso'];
+  const rows = data.products.rows;
+
+  const totals = seriesKeys.reduce((acc, key) => { acc[key] = 0; return acc; }, {});
+  const totalsNew = seriesKeys.reduce((acc, key) => { acc[key] = 0; return acc; }, {});
+  const totalsRet = seriesKeys.reduce((acc, key) => { acc[key] = 0; return acc; }, {});
+  let hasType = data.products.typeIdx !== -1;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const name = String(row[data.products.productIdx] || '').trim();
+    if (!name) continue;
+    const sales = parseNumber(row[data.products.salesIdx]) || 0;
+    const typeVal = hasType ? String(row[data.products.typeIdx] || '').trim().toLowerCase() : '';
+    const key = name.toLowerCase().includes('scalp') ? 'scalp'
+      : name.toLowerCase().includes('calm') ? 'calm'
+      : name.toLowerCase().includes('clear') ? 'clear'
+      : name.toLowerCase().includes('bio balance') ? 'bio balance'
+      : name.toLowerCase().includes('t-zone') || name.toLowerCase().includes('t zone') ? 't-zone'
+      : name.toLowerCase().includes('pso') ? 'pso' : null;
+    if (!key) continue;
+    totals[key] += sales;
+    if (hasType) {
+      if (typeVal.includes('new') || typeVal.includes('חדש')) totalsNew[key] += sales;
+      else if (typeVal.includes('return') || typeVal.includes('ret') || typeVal.includes('חוזר')) totalsRet[key] += sales;
+    }
+  }
+
+  const overallData = seriesKeys.map((key, idx) => ({
+    key,
+    label: seriesNames[idx],
+    value: totals[key],
+  })).filter(item => item.value > 0);
+  const newData = seriesKeys.map((key, idx) => ({
+    key,
+    label: seriesNames[idx],
+    value: totalsNew[key],
+  })).filter(item => item.value > 0);
+  const retData = seriesKeys.map((key, idx) => ({
+    key,
+    label: seriesNames[idx],
+    value: totalsRet[key],
+  })).filter(item => item.value > 0);
+
+  const sections = [];
+  sections.push(renderPieCard('OVERALL NET SALES BY COLLECTION', overallData, 'שקלים ואחוזים לפי סדרת מוצרים'));
+  if (hasType) {
+    sections.push(renderPieCard('RETURNING NET SALES BY COLLECTION', retData, 'רק מכירות של RETURNING')); 
+    sections.push(renderPieCard('NEW NET SALES BY COLLECTION', newData, 'רק מכירות של NEW'));
+  } else if (data.cu) {
+    const newTotal = sumByType(data.cu.rows, data.cu.typeIdx, data.cu.newVal, data.cu.salesIdx);
+    const retTotal = sumByType(data.cu.rows, data.cu.typeIdx, data.cu.retVal, data.cu.salesIdx);
+    sections.push(renderSimplePieCard('RETURNING NET SALES', retTotal, 'סה"כ מכירות RETURNING מתוך הלקוחות')); 
+    sections.push(renderSimplePieCard('NEW NET SALES', newTotal, 'סה"כ מכירות NEW מתוך הלקוחות'));
+  } else {
+    sections.push(`<div class="chart-card"><div class="chart-title">RETURNING NET SALES BY COLLECTION</div><div class="chart-note">אין עמודת NEW/RETURNING בקובץ Products; טען גם קובץ לקוחות כדי ליצור גרף זה.</div></div>`);
+    sections.push(`<div class="chart-card"><div class="chart-title">NEW NET SALES BY COLLECTION</div><div class="chart-note">אין עמודת NEW/RETURNING בקובץ Products; טען גם קובץ לקוחות כדי ליצור גרף זה.</div></div>`);
+  }
+
+  container.innerHTML = sections.join('');
+}
+
+function renderPieCard(title, items, subtitle) {
+  if (!items.length) {
+    return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-note">לא נמצאו נתונים מתאימים להצגה.</div></div>`;
+  }
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-subtitle">${subtitle}</div><div class="chart-total">TOTAL NET SALES: ₪${Number(total).toFixed(0)}</div>${renderPieSvg(items, total)}${renderLegend(items, total)}</div>`;
+}
+
+function renderSimplePieCard(title, value, subtitle) {
+  const items = [{ label: title, value: value || 0 }];
+  const total = value || 0;
+  return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-subtitle">${subtitle}</div><div class="chart-total">TOTAL NET SALES: ₪${Number(total).toFixed(0)}</div>${total > 0 ? renderPieSvg(items, total) : '<div class="chart-note">אין נתונים להצגה.</div>'}${total > 0 ? renderLegend(items, total) : ''}</div>`;
+}
+
+function renderPieSvg(items, total) {
+  const colorMap = {
+    scalp: '#FFA07A',
+    calm: '#7DD3FC',
+    clear: '#86EFAC',
+    'bio balance': '#8B5CF6',
+    't-zone': '#F9A8D4',
+    pso: '#BE185D',
+  };
+  const defaultColors = ['#4f46e5', '#22c55e', '#3b82f6', '#8b5cf6', '#14b8a6', '#f59e0b'];
+  const radius = 90;
+  const center = 100;
+  let startAngle = 0;
+  const paths = items.map((item, index) => {
+    const slice = item.value / total;
+    const endAngle = startAngle + slice * Math.PI * 2;
+    const x1 = center + radius * Math.cos(startAngle);
+    const y1 = center + radius * Math.sin(startAngle);
+    const x2 = center + radius * Math.cos(endAngle);
+    const y2 = center + radius * Math.sin(endAngle);
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+    const path = `M ${center},${center} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+    const color = colorMap[item.key] || defaultColors[index % defaultColors.length];
+    startAngle = endAngle;
+    return `<path d="${path}" fill="${color}"></path>`;
+  }).join('');
+  return `<svg class="pie-svg" viewBox="0 0 200 200">${paths}</svg>`;
+}
+
+function renderLegend(items, total) {
+  const colorMap = {
+    scalp: '#FFA07A',
+    calm: '#7DD3FC',
+    clear: '#86EFAC',
+    'bio balance': '#8B5CF6',
+    't-zone': '#F9A8D4',
+    pso: '#BE185D',
+  };
+  return `<div class="pie-legend">${items.map((item) => {
+    const color = colorMap[item.key] || '#94a3b8';
+    const pct = total ? ((item.value / total) * 100).toFixed(1) : '0.0';
+    return `<div class="legend-item"><span class="legend-color" style="background:${color}"></span><span>${item.label}: ₪${Number(item.value).toFixed(0)} (${pct}%)</span></div>`;
+  }).join('')}</div>`;
+}
+
+function parseNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  let str = String(value).trim();
+  if (!str) return null;
+  str = str.replace(/[^0-9,\.\-]/g, '');
+  const hasComma = str.indexOf(',') !== -1;
+  const hasDot = str.indexOf('.') !== -1;
+  if (hasComma && hasDot) str = str.replace(/,/g, '');
+  else if (hasComma) str = str.replace(/,/g, '.');
+  const num = parseFloat(str);
+  return Number.isFinite(num) ? num : null;
+}
+
+function updateReady() {
+  const ok = data.google && data.google.costIdx !== -1
+    && data.fb && data.fb.spendIdx !== -1
+    && data.cu && data.cu.typeIdx !== -1
+    && data.cu.salesIdx !== -1
+    && data.cu.ordersIdx !== -1
+    && data.cu.countIdx !== -1;
+  document.getElementById('btn-generate').disabled = !ok;
+}
+
+function normalizeCampaignName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9א-ת\s\-]/g, '');
+}
+
+function findGoogleMatch(claudeName, googleRows, googleIdx) {
+  if (!claudeName || !googleRows) return null;
+  const normalized = normalizeCampaignName(claudeName);
+  const map = new Map();
+  for (let i = 1; i < googleRows.length; i++) {
+    const row = googleRows[i];
+    const name = normalizeCampaignName(row[googleIdx]);
+    if (!name) continue;
+    if (!map.has(name)) map.set(name, row);
+  }
+  if (map.has(normalized)) return map.get(normalized);
+  for (const [name, row] of map.entries()) {
+    if (name.includes(normalized) || normalized.includes(name)) return row;
+  }
+  return null;
+}
+
+function renderPpcTables() {
+  const container = document.getElementById('ppc-tables');
+  if (!data.ppc) {
+    container.innerHTML = '<div style="color:#94a3b8">העלה תחילה את קובץ ה-CLAUDE כדי לראות טבלאות.</div>';
+    return;
+  }
+  if (!data.google) {
+    container.innerHTML = '<div style="color:#94a3b8">העלה את Google campaign reports קודם כדי לבצע הצלבות.</div>';
+    return;
+  }
+
+  const rows = data.ppc.rows;
+  const groups = {
+    pmax: [],
+    shopping: [],
+    search: [],
+    other: [],
+  };
+  const googleHeaders = data.google.rows[0] || [];
+  const gNameIdx = findHeaderIndex(googleHeaders, ['campaign name','campaign','campaigns'], 0);
+  const gSpendIdx = data.google.costIdx !== -1
+    ? data.google.costIdx
+    : findHeaderIndex(googleHeaders, ['cost', 'amount spent', 'amount spent (ils)', 'spent', 'total cost'], 12);
+  const gRevenueIdx = findHeaderIndex(googleHeaders, ['revenue','google ads revenue','conversion value','conv. value','conv value','purchase conversion value','total conv value'], 18);
+  const gRoasIdx = findHeaderIndex(googleHeaders, ['roas','return on ad spend','conv. value / cost','conversion value / cost','value / cost'], 19);
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const campaignName = String(row[data.ppc.campaignIdx] || '').trim();
+    if (!campaignName) continue;
+    const normalized = campaignName.toLowerCase();
+    const item = {
+      campaignName,
+      sessions: parseNumber(row[data.ppc.sessionsIdx]),
+      orders: parseNumber(row[data.ppc.ordersIdx]),
+      spend: null,
+      revenueGoogleAds: null,
+      revenueShopify: parseNumber(row[data.ppc.revenueShopifyIdx]),
+      roasGoogle: null,
+      roasShopify: null,
+      ordersNew: parseNumber(row[data.ppc.ordersNewIdx]),
+      ordersReturning: parseNumber(row[data.ppc.ordersReturningIdx]),
+      cacNewCustomer: null,
+      cacReturning: null,
+    };
+    const match = findGoogleMatch(campaignName, data.google.rows, gNameIdx !== -1 ? gNameIdx : 0);
+    if (match) {
+      item.spend = parseNumber(match[gSpendIdx]);
+      item.revenueGoogleAds = parseNumber(match[gRevenueIdx]);
+      item.roasGoogle = parseNumber(match[gRoasIdx]);
+    }
+    if (item.spend != null && item.revenueShopify != null) {
+      item.roasShopify = item.revenueShopify / item.spend;
+    }
+    if (item.spend != null && item.ordersNew) {
+      item.cacNewCustomer = item.spend / item.ordersNew;
+    }
+    if (item.spend != null && item.ordersReturning) {
+      item.cacReturning = item.spend / item.ordersReturning;
+    }
+    if (normalized.includes('pmax')) groups.pmax.push(item);
+    else if (normalized.includes('shopping')) groups.shopping.push(item);
+    else if (normalized.includes('search')) groups.search.push(item);
+    else if (normalized.includes('google')) groups.other.push(item);
+  }
+
+  const sectionHtml = ['pmax','shopping','search','other'].map(key => {
+    const title = key === 'pmax' ? 'PMAX' : key === 'shopping' ? 'SHOPPING' : key === 'search' ? 'SEARCH' : 'OTHER';
+    return renderGoogleTableSection(title, groups[key]);
+  }).join('');
+
+  container.innerHTML = sectionHtml;
+}
+
+function renderGoogleTableSection(title, rows) {
+  if (!rows.length) {
+    return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו קמפיינים מתאימים.</div></div>`;
+  }
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.campaignName)}</td>
+      <td>${formatNumber(r.sessions)}</td>
+      <td>${formatNumber(r.orders)}</td>
+      <td>${formatCurrency(r.spend)}</td>
+      <td>${formatCurrency(r.revenueGoogleAds)}</td>
+      <td>${formatCurrency(r.revenueShopify)}</td>
+      <td>${formatNumber(r.roasGoogle)}</td>
+      <td>${formatNumber(r.roasShopify)}</td>
+      <td>${formatNumber(r.ordersNew)}</td>
+      <td>${formatNumber(r.ordersReturning)}</td>
+      <td>${formatCurrency(r.cacNewCustomer)}</td>
+      <td>${formatCurrency(r.cacReturning)}</td>
+    </tr>`).join('');
+  return `
+    <div class="data-section">
+      <h3>Google Campaigns — ${title}</h3>
+      <div style="overflow-x:auto"><table class="data-table"><thead><tr>
+        <th>Campaign Name</th>
+        <th>Sessions</th>
+        <th>Orders</th>
+        <th>Spend</th>
+        <th>Revenue Google Ads</th>
+        <th>Revenue Shopify</th>
+        <th>ROAS Google</th>
+        <th>ROAS Shopify</th>
+        <th>Orders New Customers</th>
+        <th>Orders Returning</th>
+        <th>CAC NewCustomer</th>
+        <th>CAC Returning</th>
+      </tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    </div>`;
+}
+
+function renderFbTables() {
+  const container = document.getElementById('fb-tables');
+  if (!data.ppc) {
+    container.innerHTML = '<div style="color:#94a3b8">העלה תחילה את קובץ ה-CLAUDE כדי לראות טבלאות.</div>';
+    return;
+  }
+  if (!data.fb) {
+    container.innerHTML = '<div style="color:#94a3b8">העלה את Facebook campaign reports קודם כדי לבצע הצלבות.</div>';
+    return;
+  }
+
+  const rows = data.ppc.rows;
+  const groups = { cold: [], warm: [], hot: [], special: [] };
+  const fbHeaders = data.fb.rows[0] || [];
+  const fbNameIdx = findHeaderIndex(fbHeaders, ['campaign name','campaign','campaigns'], 0);
+  const fbSpendIdx = data.fb.spendIdx !== -1 ? data.fb.spendIdx : 5; // column F
+  const fbRevenueIdx = findHeaderIndex(fbHeaders, ['revenue','purchase conversion value','conversion value','total conv value'], 24); // fallback to Y
+  const fbRoasIdx = findHeaderIndex(fbHeaders, ['purchase roas','roas','purchase roas (value)'], 12); // fallback to M
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const campaignName = String(row[data.ppc.campaignIdx] || '').trim();
+    if (!campaignName) continue;
+    const low = campaignName.toLowerCase();
+    const item = {
+      campaignName,
+      sessions: parseNumber(row[data.ppc.sessionsIdx]),
+      orders: parseNumber(row[data.ppc.ordersIdx]),
+      spend: null,
+      revenueFacebook: null,
+      revenueShopify: parseNumber(row[data.ppc.revenueShopifyIdx]),
+      roasFacebook: null,
+      roasShopify: null,
+      ordersNew: parseNumber(row[data.ppc.ordersNewIdx]),
+      ordersReturning: parseNumber(row[data.ppc.ordersReturningIdx]),
+      cacNewCustomer: null,
+      cacReturning: null,
+    };
+    const match = findGoogleMatch(campaignName, data.fb.rows, fbNameIdx !== -1 ? fbNameIdx : 0);
+    if (match) {
+      item.spend = parseNumber(match[fbSpendIdx]);
+      item.revenueFacebook = parseNumber(match[fbRevenueIdx]);
+      item.roasFacebook = parseNumber(match[fbRoasIdx]);
+    }
+    if (item.spend != null && item.revenueShopify != null) item.roasShopify = item.revenueShopify / item.spend;
+    if (item.spend != null && item.ordersNew) item.cacNewCustomer = item.spend / item.ordersNew;
+    if (item.spend != null && item.ordersReturning) item.cacReturning = item.spend / item.ordersReturning;
+
+    // Only include Facebook campaigns with spend > ₪3
+    if (item.spend == null || item.spend <= 3) continue;
+
+    if (low.includes('cold')) groups.cold.push(item);
+    else if (low.includes('warm')) groups.warm.push(item);
+    else if (low.includes('hot')) groups.hot.push(item);
+    else if (low.includes('special')) groups.special.push(item);
+    else {
+      // skip OTHER by design
+    }
+  }
+
+  const sectionHtml = ['cold','warm','hot','special'].map(k => {
+    const title = k.toUpperCase();
+    return renderFacebookTableSection(title, groups[k]);
+  }).join('');
+  container.innerHTML = sectionHtml;
+}
+
+function setProductFilter(filter) {
+  data.productFilter = filter;
+  document.querySelectorAll('#product-filter-controls .filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  renderProductTables();
+}
+
+function renderProductTables() {
+  const container = document.getElementById('product-tables');
+  if (!data.products) {
+    container.innerHTML = '<div style="color:#94a3b8">העלה תחילה את קובץ ה‑Products כדי לראות את הטבלאות.</div>';
+    return;
+  }
+
+  const rows = data.products.rows;
+  const groups = {
+    scalp: [],
+    calm: [],
+    clear: [],
+    'bio balance': [],
+    't-zone': [],
+    pso: [],
+  };
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const productName = String(row[data.products.productIdx] || '').trim();
+    if (!productName) continue;
+    const nameLower = productName.toLowerCase();
+    const typeValue = data.products.typeIdx !== -1 ? String(row[data.products.typeIdx] || '').trim() : '';
+    const item = {
+      productName,
+      itemsSold: parseNumber(row[data.products.itemsIdx]),
+      netSales: parseNumber(row[data.products.salesIdx]),
+      typeValue,
+      newReturnLabel: normalizeNewReturn(typeValue),
+    };
+    if (nameLower.includes('scalp')) groups.scalp.push(item);
+    else if (nameLower.includes('calm')) groups.calm.push(item);
+    else if (nameLower.includes('clear')) groups.clear.push(item);
+    else if (nameLower.includes('bio balance')) groups['bio balance'].push(item);
+    else if (nameLower.includes('t-zone') || nameLower.includes('t zone')) groups['t-zone'].push(item);
+    else if (nameLower.includes('pso')) groups.pso.push(item);
+  }
+
+  const sectionHtml = Object.entries(groups).map(([key, items]) => {
+    if (data.productFilter === 'ALL_TOGETHER') {
+      items = aggregateProductRows(items);
+    }
+    items.sort((a, b) => (b.netSales || 0) - (a.netSales || 0));
+    const title = key === 'bio balance' ? 'BIO BALANCE' : key.toUpperCase();
+    const filtered = items.filter(item => {
+      if (data.productFilter === 'ALL' || data.productFilter === 'ALL_TOGETHER') return true;
+      return item.newReturnLabel === data.productFilter;
+    });
+    return renderProductSection(title, filtered);
+  }).join('');
+  container.innerHTML = sectionHtml;
+}
+
+function aggregateProductRows(items) {
+  const map = new Map();
+  items.forEach(item => {
+    const key = item.productName.trim();
+    if (!map.has(key)) {
+      map.set(key, {
+        ...item,
+        itemsSold: item.itemsSold || 0,
+        netSales: item.netSales || 0,
+        newReturnLabel: 'ALL TOGETHER',
+      });
+      return;
+    }
+    const existing = map.get(key);
+    existing.itemsSold = (existing.itemsSold || 0) + (item.itemsSold || 0);
+    existing.netSales = (existing.netSales || 0) + (item.netSales || 0);
+  });
+  return Array.from(map.values());
+}
+
+function renderProductSection(title, rows) {
+  if (!rows.length) {
+    return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו מוצרים בסדרה זו.</div></div>`;
+  }
+  let totalItems = 0;
+  let totalSales = 0;
+  const rowsHtml = rows.map(r => {
+    totalItems += r.itemsSold || 0;
+    totalSales += r.netSales || 0;
+    return `
+    <tr>
+      <td>${escapeHtml(r.productName)}</td>
+      <td>${formatNumber(r.itemsSold)}</td>
+      <td>${formatCurrency(r.netSales)}</td>
+      <td>${escapeHtml(r.newReturnLabel)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="data-section">
+      <h3>Products Performance — ${title}</h3>
+      <div style="overflow-x:auto"><table class="data-table"><thead><tr>
+        <th>Product Name</th>
+        <th>Items Sold</th>
+        <th>Net Sales</th>
+        <th>New/Returning</th>
+      </tr></thead><tbody>${rowsHtml}
+        <tr style="font-weight:700; border-top:2px solid #4f46e5;">
+          <td>TOPLAM</td>
+          <td>${formatNumber(totalItems)}</td>
+          <td>${formatCurrency(totalSales)}</td>
+          <td>—</td>
+        </tr>
+      </tbody></table></div>
+    </div>`;
+}
+
+function normalizeNewReturn(typeValue) {
+  const lower = String(typeValue || '').trim().toLowerCase();
+  if (!lower) return 'Unknown';
+  if (lower.includes('new') || lower.includes('חדש')) return 'NEW';
+  if (lower.includes('return') || lower.includes('ret') || lower.includes('חוזר')) return 'RETURNING';
+  return typeValue;
+}
+
+function renderFacebookTableSection(title, rows) {
+  if (!rows.length) return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו קמפיינים מתאימים.</div></div>`;
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.campaignName)}</td>
+      <td>${formatNumber(r.sessions)}</td>
+      <td>${formatNumber(r.orders)}</td>
+      <td>${formatCurrency(r.spend)}</td>
+      <td>${formatCurrency(r.revenueFacebook)}</td>
+      <td>${formatCurrency(r.revenueShopify)}</td>
+      <td>${formatNumber(r.roasFacebook)}</td>
+      <td>${formatNumber(r.roasShopify)}</td>
+      <td>${formatNumber(r.ordersNew)}</td>
+      <td>${formatNumber(r.ordersReturning)}</td>
+      <td>${formatCurrency(r.cacNewCustomer)}</td>
+      <td>${formatCurrency(r.cacReturning)}</td>
+    </tr>`).join('');
+  return `
+    <div class="data-section">
+      <h3>Facebook Campaigns — ${title}</h3>
+      <div style="overflow-x:auto"><table class="data-table"><thead><tr>
+        <th>Campaign Name</th>
+        <th>Sessions</th>
+        <th>Orders</th>
+        <th>Spend</th>
+        <th>Revenue Facebook Ads</th>
+        <th>Revenue Shopify</th>
+        <th>ROAS Facebook</th>
+        <th>ROAS Shopify</th>
+        <th>Orders New Customers</th>
+        <th>Orders Returning</th>
+        <th>CAC NewCustomer</th>
+        <th>CAC Returning</th>
+      </tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    </div>`;
+}
+
+function escapeHtml(text) {
+  return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatCurrency(value) {
+  return value == null ? '—' : '₪' + Number(value).toFixed(2);
+}
+
+function formatNumber(value) {
+  return value == null ? '—' : Number(value).toLocaleString('en-US');
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.page === pageId);
+  });
+  document.querySelectorAll('.page-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === pageId);
+  });
+  const report = document.getElementById('report');
+  if (pageId === 'page-overview') {
+    if (report.innerHTML.trim()) report.style.display = 'block';
+  } else {
+    report.style.display = 'none';
+  }
+  if (pageId === 'page-ppc' && data.ppc && data.google) {
+    renderPpcTables();
+  }
+  if (pageId === 'page-facebook' && data.ppc && data.fb) {
+    renderFbTables();
+  }
+  if (pageId === 'page-products') {
+    renderProductCharts();
+    renderProductTables();
+  }
+}
+
+// ── Compute ───────────────────────────────────────────────────────────────────
+function sumCol(rows, col) {
+  let t = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const v = parseNumber(rows[i][col]);
+    if (v !== null) t += v;
+  }
+  return t;
+}
+function sumByType(rows, typeCol, typeVal, valCol) {
+  let t = 0, found = false;
+  const normalizedType = String(typeVal || '').trim().toLowerCase();
+  for (let i = 1; i < rows.length; i++) {
+    const rowType = String(rows[i][typeCol] || '').trim().toLowerCase();
+    if (rowType === normalizedType) {
+      const v = parseNumber(rows[i][valCol]);
+      if (v !== null) { t += v; found = true; }
+    }
+  }
+  return found ? t : null;
+}
+
+function generateReport() {
+  const gC  = data.google.costIdx;
+  const fbS = data.fb.spendIdx;
+  const cuT = data.cu.typeIdx;
+  const cuSal= data.cu.salesIdx;
+  const cuOrd= data.cu.ordersIdx;
+  const cuCnt= data.cu.countIdx;
+  const nVal = data.cu.newVal;
+  const rVal = data.cu.retVal;
+
+  const googleSpend = sumCol(data.google.rows, gC);
+  const fbSpend     = sumCol(data.fb.rows, fbS);
+  const tiktokSpend = null;
+  const totalSpend  = googleSpend + fbSpend + (tiktokSpend || 0);
+  const adSpendForROI = googleSpend + fbSpend;
+
+  const newNetSales = sumByType(data.cu.rows, cuT, nVal, cuSal);
+  const retNetSales = sumByType(data.cu.rows, cuT, rVal, cuSal);
+  const newOrders   = sumByType(data.cu.rows, cuT, nVal, cuOrd);
+  const retOrders   = sumByType(data.cu.rows, cuT, rVal, cuOrd);
+  const newCust     = sumByType(data.cu.rows, cuT, nVal, cuCnt);
+  const retCust     = sumByType(data.cu.rows, cuT, rVal, cuCnt);
+
+  const netSales    = (newNetSales||0)+(retNetSales||0);
+  const totalOrders = (newOrders||0)+(retOrders||0);
+  const totalCust   = (newCust||0)+(retCust||0);
+
+  renderReport({
+    googleSpend, fbSpend, totalSpend, netSales, totalOrders,
+    costPerConv: totalOrders ? totalSpend/totalOrders : null,
+    cacNew:      newCust     ? totalSpend/newCust     : null,
+    roi:         adSpendForROI && netSales ? netSales/adSpendForROI : null,
+    newCust, retCust, newNetSales, retNetSales, totalCust,
+    pctNew: totalCust ? (newCust||0)/totalCust : null,
+    pctRet: totalCust ? (retCust||0)/totalCust : null,
+    aovNew: newOrders ? newNetSales/newOrders  : null,
+    aovRet: retOrders ? retNetSales/retOrders  : null,
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const fmt$  = v => v==null ? '<span class="badge-na">N/A</span>' : '₪'+Math.round(v).toLocaleString('en-US');
+const fmtN  = v => v==null ? '<span class="badge-na">N/A</span>' : Math.round(v).toLocaleString('en-US');
+const fmtPct= v => v==null ? '<span class="badge-na">N/A</span>' : (v*100).toFixed(1)+'%';
+const fmtX  = v => v==null ? '<span class="badge-na">N/A</span>' : v.toFixed(2)+'x';
+const fmtAov= v => v==null ? '<span class="badge-na">N/A</span>' : '₪'+v.toFixed(2);
+
+function card(icon,label,val,sub,accent,barPct) {
+  const bar = barPct!=null ? `<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,barPct*100).toFixed(1)}%"></div></div>` : '';
+  return `<div class="card ${accent}"><div class="card-icon">${icon}</div><div class="card-label">${label}</div><div class="card-value">${val}</div>${sub?`<div class="card-sub">${sub}</div>`:''}${bar}</div>`;
+}
+
+function renderReport(d) {
+  const today = new Date().toLocaleDateString('he-IL',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('report').innerHTML = `
+  <div style="max-width:960px;margin:0 auto;padding:0 24px 60px">
+    <div class="report-header">
+      <h2>Performance Summary</h2>
+      <div class="report-date">נוצר ב-${today}</div>
+    </div>
+
+    <div class="section-label">💸 Advertising Spend</div>
+    <div class="cards-grid cols-4">
+      ${card('🔍','Total Google Spend',  fmt$(d.googleSpend),'Google Campaigns','accent-blue')}
+      ${card('📘','Total FB / IG Spend', fmt$(d.fbSpend),    'Facebook & Instagram','accent-violet')}
+      ${card('🎬','Total TikTok Spend',  fmt$(d.tiktokSpend), 'No TikTok data detected','accent-cyan')}
+      ${card('💰','Total Spend — All Platforms', fmt$(d.totalSpend), 'Google + Meta + TikTok','accent-orange')}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">📈 Sales & Efficiency</div>
+    <div class="cards-grid cols-4">
+      ${card('🛒','Net Sales',      fmt$(d.netSales),    'New + Returning',      'accent-green')}
+      ${card('📦','Orders',         fmtN(d.totalOrders), 'Total orders',         'accent-cyan')}
+      ${card('🎯','Cost per Conv.', fmt$(d.costPerConv), 'Total Spend / Orders', 'accent-orange')}
+      ${card('📊','ROI',            fmtX(d.roi),         'Total Spend / Net Sales', d.roi&&d.roi<1?'accent-red':'accent-green')}
+    </div>
+    <div class="cards-grid cols-2" style="margin-top:14px">
+      ${card('🆕','CAC — New Customers', fmt$(d.cacNew),     'Total Spend / # New Customers','accent-pink')}
+      ${card('✅','Cost per Order',      fmt$(d.costPerConv),'Efficiency per purchase','accent-teal')}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">👥 Customer Breakdown</div>
+    <div class="cards-grid cols-4">
+      ${card('🔁','# Returning Customers', fmtN(d.retCust),     '','accent-blue',   d.pctRet)}
+      ${card('🆕','# New Customers',       fmtN(d.newCust),     '','accent-violet',  d.pctNew)}
+      ${card('💵','Net Sales — Returning', fmt$(d.retNetSales), '','accent-green')}
+      ${card('💵','Net Sales — New',       fmt$(d.newNetSales), '','accent-cyan')}
+    </div>
+    <div class="cards-grid cols-2" style="margin-top:14px">
+      ${card('📏','% Existing Customers', fmtPct(d.pctRet), `${fmtN(d.retCust)} מתוך ${fmtN(d.totalCust)}`,'accent-blue',   d.pctRet)}
+      ${card('📏','% New Customers',      fmtPct(d.pctNew), `${fmtN(d.newCust)} מתוך ${fmtN(d.totalCust)}`,'accent-violet',  d.pctNew)}
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">🛍️ Average Order Value (Net AOV)</div>
+    <div class="cards-grid cols-2">
+      ${card('🆕','Net AOV — New Customers',       fmtAov(d.aovNew),'Net Sales New / Orders New',       'accent-pink')}
+      ${card('🔁','Net AOV — Returning Customers', fmtAov(d.aovRet),'Net Sales Returning / Orders Ret.','accent-teal')}
+    </div>
+
+    <div class="footer-note">AI Studio Performance Dashboard · נוצר אוטומטית מהקבצים שהועלו</div>
+  </div>`;
+  document.getElementById('report').style.display = 'block';
+  document.body.classList.add('generated');
+  setDownloadButtonsState(true);
+  document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+}
+
+function setDownloadButtonsState(enabled) {
+  document.getElementById('btn-download-pdf').disabled = !enabled;
+  document.getElementById('btn-download-xlsx').disabled = !enabled;
+}
+
+function downloadReportPdf() {
+  const report = document.getElementById('report');
+  if (!report.innerHTML.trim()) {
+    alert('אנא גש קודם ליצירת דו"ח מלא לפני הורדת PDF.');
+    return;
+  }
+  const html = `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>Report PDF</title><style>
+      body { font-family: Arial, sans-serif; margin: 20px; color: #000; background: #fff; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+      th, td { border: 1px solid #444; padding: 8px; text-align: right; }
+      th { background: #f3f4f6; }
+      h2, h3, .section-label { color: #111; }
+      .footer-note { font-size: 11px; color: #444; margin-top: 24px; }
+    </style></head><body>${report.innerHTML}</body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('לא ניתן לפתוח חלון חדש לשמירת PDF. בדוק שהדפדפן לא חוסם חלונות קופצים.');
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+function downloadAllDataExcel() {
+  const workbook = XLSX.utils.book_new();
+  const addRowsAsSheet = (rows, name) => {
+    if (!rows || !rows.length) return;
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, sheet, name);
+  };
+
+  addRowsAsSheet(data.google?.rows, 'Google');
+  addRowsAsSheet(data.fb?.rows, 'Facebook');
+  addRowsAsSheet(data.cu?.rows, 'Customers');
+  addRowsAsSheet(data.ppc?.rows, 'PPC');
+  addRowsAsSheet(data.products?.rows, 'Products');
+
+  if (workbook.SheetNames.length === 0) {
+    alert('לא נמצאו נתונים להורדה. אנא העלה את כל הקבצים לפני הורדה ל-Excel.');
+    return;
+  }
+
+  XLSX.writeFile(workbook, 'marketing-performance-data.xlsx');
+}
+</script>
+</body>
+</html>
