@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { direction: rtl; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
 
   header {
@@ -72,8 +71,6 @@
   .download-btn { border: 1px solid #3b82f6; background: #1e3a8a; color: #fff; padding: 10px 18px; border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
   .download-btn:hover:not(:disabled) { background: #2563eb; }
   .download-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .debug-box { background:#0f172a; border:1px solid #1e2a3a; padding:10px 14px; color:#cbd5e1; border-radius:8px; font-size:13px; margin-bottom:12px; }
-  .debug-box strong { color:#94a3b8; display:inline-block; width:140px; }
 
   .generated #page-overview .step,
   .generated #page-overview .btn-generate {
@@ -135,27 +132,15 @@
   .filter-btn { border: 1px solid #475569; background: #0f172a; color: #cbd5e1; padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 700; transition: all 0.2s ease; }
   .filter-btn:hover { border-color: #94a3b8; color: #fff; }
   .filter-btn.active { background: #1f2937; border-color: #4f46e5; color: #fff; }
-
-  /* Facebook filter button collection colors (text kept black for readability) */
-  .filter-btn.col-scalp { background: #f59e0b; border-color: #f59e0b; color: #000; }
-  .filter-btn.col-clear { background: #06b6d4; border-color: #06b6d4; color: #000; }
-  .filter-btn.col-bio { background: #8b5cf6; border-color: #8b5cf6; color: #000; }
-  .filter-btn.col-sebo { background: #ec4899; border-color: #ec4899; color: #000; }
-  .filter-btn.col-pso { background: #14b8a6; border-color: #14b8a6; color: #000; }
-  .filter-btn.col-calm { background: #3b82f6; border-color: #3b82f6; color: #000; }
-  .filter-btn.col-other { background: #22c55e; border-color: #22c55e; color: #000; }
-  .filter-btn.col-all { background: #0f172a; border-color: #4f46e5; color: #cbd5e1; }
-  .filter-btn.col-scalp.active, .filter-btn.col-clear.active, .filter-btn.col-bio.active, .filter-btn.col-sebo.active, .filter-btn.col-pso.active, .filter-btn.col-calm.active, .filter-btn.col-other.active { box-shadow: 0 0 0 3px rgba(255,255,255,0.06); color: #000; }
-  .filter-btn.col-scalp:hover, .filter-btn.col-clear:hover, .filter-btn.col-bio:hover, .filter-btn.col-sebo:hover, .filter-btn.col-pso:hover, .filter-btn.col-calm:hover, .filter-btn.col-other:hover { color: #000; opacity: 0.95; }
   .legend-item { display: flex; align-items: center; gap: 8px; }
   .legend-color { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
   .pie-svg { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
   .chart-note { margin-top: 12px; color: #94a3b8; font-size: 12px; line-height: 1.4; }
 
   .data-section h3 { font-size: 14px; margin-bottom: 10px; color: #fff; }
-  .data-table { width: 100%; min-width: 1600px; border-collapse: collapse; margin-top: 10px; direction: rtl; }
-  .data-table th, .data-table td { border: 1px solid #1e2a3a; padding: 10px; font-size: 12px; color: #e2e8f0; text-align: right; }
-  .data-table th { background: #1e2a3a; color: #94a3b8; }
+  .data-table { width: 100%; min-width: 1600px; border-collapse: collapse; margin-top: 10px; }
+  .data-table th, .data-table td { border: 1px solid #1e2a3a; padding: 10px; font-size: 12px; color: #e2e8f0; }
+  .data-table th { background: #1e2a3a; color: #94a3b8; text-align: right; }
   .data-table tbody tr:nth-child(even) { background: #0f1520; }
   .data-table tbody tr:hover { background: #111827; }
   #page-ppc .container { max-width: 1600px; }
@@ -255,7 +240,6 @@
     <button class="download-btn" id="btn-download-pdf" disabled onclick="downloadReportPdf()">PDF להורדה</button>
     <button class="download-btn" id="btn-download-xlsx" disabled onclick="downloadAllDataExcel()">אקסל להורדה</button>
   </div>
-  <div class="debug-box" id="debug-status">Debug: no data loaded yet.</div>
   <button class="btn-generate" id="btn-generate" disabled onclick="generateReport()">
     🚀 Generate Report
   </button>
@@ -345,7 +329,7 @@
 <div id="report"></div>
 
 <script>
-const data = { google: null, fb: null, cu: null, ppc: null, products: null, productFilter: 'ALL', fbFilterMain: 'ALL' };
+const data = { google: null, fb: null, cu: null, ppc: null, products: null, productFilter: 'ALL' };
 
 function parseFile(file) {
   const ext = String(file.name || '').split('.').pop().toLowerCase();
@@ -549,8 +533,6 @@ document.getElementById('file-ppc').addEventListener('change', async (e) => {
   const sessionsIdx = findHeaderIndex(headers, ['sessions','session']);
   const ordersIdx = findHeaderIndex(headers, ['orders','order']);
   const revenueShopifyIdx = findHeaderIndex(headers, ['revenue shopify','shopify revenue','revenue','sales']);
-  const totalSalesLastIdx = findHeaderIndex(headers, ['total sales (last non-direct click)','net sales (last non-direct click)','total sales last non-direct click','net sales last non-direct click','last non-direct click','last_non_direct_click'], -1);
-  const totalSalesAnyIdx = findHeaderIndex(headers, ['total sales (any click)','total sales any click','total sales (any_click)','any click','any_click','total sales (any)'], -1);
   const ordersNewIdx = findHeaderIndex(headers, ['new orders','orders new','new customer','orders new customers','new customers']);
   const ordersReturningIdx = findHeaderIndex(headers, ['returning orders','orders returning','returning customer','returning customers']);
 
@@ -561,8 +543,6 @@ document.getElementById('file-ppc').addEventListener('change', async (e) => {
     sessionsIdx: sessionsIdx !== -1 ? sessionsIdx : 1,
     ordersIdx: ordersIdx !== -1 ? ordersIdx : 3,
     revenueShopifyIdx: revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12,
-    totalSalesLastIdx: totalSalesLastIdx !== -1 ? totalSalesLastIdx : (revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12),
-    totalSalesAnyIdx: totalSalesAnyIdx !== -1 ? totalSalesAnyIdx : (revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12),
     ordersNewIdx: ordersNewIdx !== -1 ? ordersNewIdx : 6,
     ordersReturningIdx: ordersReturningIdx !== -1 ? ordersReturningIdx : 9,
   };
@@ -748,29 +728,6 @@ function updateReady() {
     && data.cu.ordersIdx !== -1
     && data.cu.countIdx !== -1;
   document.getElementById('btn-generate').disabled = !ok;
-  updateDiagnostics();
-}
-
-function updateDiagnostics() {
-  const el = document.getElementById('debug-status');
-  if (!el) return;
-  const parts = [];
-  const g = data.google;
-  parts.push(`<strong>Google:</strong> ${g? 'loaded' : 'missing'}${g? ' (costIdx='+g.costIdx+')':''}`);
-  const f = data.fb;
-  parts.push(`<strong>Facebook:</strong> ${f? 'loaded' : 'missing'}${f? ' (spendIdx='+f.spendIdx+')':''}`);
-  const c = data.cu;
-  parts.push(`<strong>Customers:</strong> ${c? 'loaded' : 'missing'}${c? ' (typeIdx='+c.typeIdx+', salesIdx='+c.salesIdx+')':''}`);
-  const p = data.ppc;
-  parts.push(`<strong>PPC CLAUDE:</strong> ${p? 'loaded' : 'missing'}${p? ' (campaignIdx='+p.campaignIdx+')':''}`);
-  const prod = data.products;
-  parts.push(`<strong>Products:</strong> ${prod? 'loaded' : 'missing'}`);
-  const genBtn = document.getElementById('btn-generate');
-  const generateEnabled = genBtn ? !genBtn.disabled : false;
-  parts.push(`<strong>Generate Enabled:</strong> ${generateEnabled}`);
-  el.innerHTML = parts.map(p=>`<div>${p}</div>`).join('');
-  // Hide the debug box when all required files are present and "Generate" is enabled
-  el.style.display = generateEnabled ? 'none' : 'block';
 }
 
 function normalizeCampaignName(name) {
@@ -833,10 +790,9 @@ function renderPpcTables() {
       campaignName,
       sessions: parseNumber(row[data.ppc.sessionsIdx]),
       orders: parseNumber(row[data.ppc.ordersIdx]),
-        spend: null,
-        revenueGoogleAds: null,
-        // For Google PPC we prefer TOTAL SALES (last non-direct click)
-        revenueShopify: parseNumber(row[data.ppc.totalSalesLastIdx] ?? row[data.ppc.revenueShopifyIdx]),
+      spend: null,
+      revenueGoogleAds: null,
+      revenueShopify: parseNumber(row[data.ppc.revenueShopifyIdx]),
       roasGoogle: null,
       roasShopify: null,
       ordersNew: parseNumber(row[data.ppc.ordersNewIdx]),
@@ -882,15 +838,15 @@ function renderGoogleTableSection(title, rows) {
       <td>${escapeHtml(r.campaignName)}</td>
       <td>${formatNumber(r.sessions)}</td>
       <td>${formatNumber(r.orders)}</td>
-      <td>${formatCurrencyRounded(r.spend)}</td>
-      <td>${formatCurrencyRounded(r.revenueGoogleAds)}</td>
-      <td>${formatCurrencyRounded(r.revenueShopify)}</td>
-      <td>${formatRoas(r.roasGoogle)}</td>
-      <td>${formatRoas(r.roasShopify)}</td>
+      <td>${formatCurrency(r.spend)}</td>
+      <td>${formatCurrency(r.revenueGoogleAds)}</td>
+      <td>${formatCurrency(r.revenueShopify)}</td>
+      <td>${formatNumber(r.roasGoogle)}</td>
+      <td>${formatNumber(r.roasShopify)}</td>
       <td>${formatNumber(r.ordersNew)}</td>
       <td>${formatNumber(r.ordersReturning)}</td>
-      <td>${formatCurrencyRounded(r.cacNewCustomer)}</td>
-      <td>${formatCurrencyRounded(r.cacReturning)}</td>
+      <td>${formatCurrency(r.cacNewCustomer)}</td>
+      <td>${formatCurrency(r.cacReturning)}</td>
     </tr>`).join('');
   return `
     <div class="data-section">
@@ -933,9 +889,7 @@ function renderFbTables() {
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const campaignNameRaw = String(row[data.ppc.campaignIdx] || '').trim();
-    // strip trailing comma/space-separated numeric markers like ",1,2,3" that were previously injected
-    const campaignName = campaignNameRaw.replace(/[,\s]+\d+(?:[,\s]*\d+)*$/,'').trim();
+    const campaignName = String(row[data.ppc.campaignIdx] || '').trim();
     if (!campaignName) continue;
     const low = campaignName.toLowerCase();
     const item = {
@@ -943,14 +897,10 @@ function renderFbTables() {
       sessions: parseNumber(row[data.ppc.sessionsIdx]),
       orders: parseNumber(row[data.ppc.ordersIdx]),
       spend: null,
-      // For Facebook PPC we prefer TOTAL SALES (any click)
       revenueFacebook: null,
-      // Revenue Shopify ANY (total sales any click)
-      revenueShopifyAny: parseNumber(row[data.ppc.totalSalesAnyIdx] ?? row[data.ppc.revenueShopifyIdx]),
+      revenueShopify: parseNumber(row[data.ppc.revenueShopifyIdx]),
       roasFacebook: null,
-      roasShopifyAny: null,
-      // Total Sales LND comes from column L (index 11) in the CLAUDE file, fallback to detected index
-      totalSalesLnd: parseNumber((row[11] !== undefined ? row[11] : null) ?? row[data.ppc.totalSalesLastIdx]),
+      roasShopify: null,
       ordersNew: parseNumber(row[data.ppc.ordersNewIdx]),
       ordersReturning: parseNumber(row[data.ppc.ordersReturningIdx]),
       cacNewCustomer: null,
@@ -962,15 +912,7 @@ function renderFbTables() {
       item.revenueFacebook = parseNumber(match[fbRevenueIdx]);
       item.roasFacebook = parseNumber(match[fbRoasIdx]);
     }
-    // For Facebook ROAS-Shopify ANY use TOTAL SALES (any click) where available
-    const fbRevenueShopifyAny = parseNumber(row[data.ppc.totalSalesAnyIdx] ?? row[data.ppc.revenueShopifyIdx]);
-    if (item.spend != null && fbRevenueShopifyAny != null) item.roasShopifyAny = fbRevenueShopifyAny / item.spend;
-    // Compute Revenue Shopify LND = Total sales (last non-direct click) / spend
-    if (item.spend != null && item.totalSalesLnd != null) {
-      item.roasShopifyLnd = item.totalSalesLnd / item.spend;
-    } else {
-      item.roasShopifyLnd = null;
-    }
+    if (item.spend != null && item.revenueShopify != null) item.roasShopify = item.revenueShopify / item.spend;
     if (item.spend != null && item.ordersNew) item.cacNewCustomer = item.spend / item.ordersNew;
     if (item.spend != null && item.ordersReturning) item.cacReturning = item.spend / item.ordersReturning;
 
@@ -986,20 +928,11 @@ function renderFbTables() {
     }
   }
 
-  // render a single main filter for all Facebook sections
-  const collections = ['ALL','SCALP','CLEAR','BIO','SEBO','PSO','CALM','OTHER'];
-  const currentFilter = data.fbFilterMain || 'ALL';
-  const filterControls = `<div class="product-filter" id="fb-filter-main">` + collections.map(col => {
-    const active = col === currentFilter ? 'filter-btn active' : 'filter-btn';
-    const colClass = 'col-' + col.toLowerCase();
-    return `<button class="${active} ${colClass}" onclick="setFbFilter('${col}')">${col}</button>`;
-  }).join('') + `</div>`;
-
   const sectionHtml = ['cold','warm','hot','special'].map(k => {
     const title = k.toUpperCase();
     return renderFacebookTableSection(title, groups[k]);
   }).join('');
-  container.innerHTML = filterControls + sectionHtml;
+  container.innerHTML = sectionHtml;
 }
 
 function setProductFilter(filter) {
@@ -1129,64 +1062,39 @@ function normalizeNewReturn(typeValue) {
 
 function renderFacebookTableSection(title, rows) {
   if (!rows.length) return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו קמפיינים מתאימים.</div></div>`;
-  const currentFilter = data.fbFilterMain || 'ALL';
-  // filter rows by collection if a filter is active (main filter)
-  const filteredRows = (currentFilter && currentFilter !== 'ALL') ? rows.filter(r => mapCampaignCollection(r.campaignName) === currentFilter) : rows;
-
-  const rowsHtml = filteredRows.map(r => `
+  const rowsHtml = rows.map(r => `
     <tr>
       <td>${escapeHtml(r.campaignName)}</td>
-      <td>${formatCurrencyRounded(r.spend)}</td>
-      <td>${formatCurrencyRounded(r.revenueFacebook)}</td>
-      <td>${formatCurrencyRounded(r.totalSalesLnd)}</td>
-      <td>${formatCurrencyRounded(r.revenueShopifyAny)}</td>
-      <td>${formatRoas(r.roasShopifyLnd)}</td>
-      <td>${formatRoas(r.roasShopifyAny)}</td>
-      <td>${formatRoas(r.roasFacebook)}</td>
+      <td>${formatNumber(r.sessions)}</td>
       <td>${formatNumber(r.orders)}</td>
+      <td>${formatCurrency(r.spend)}</td>
+      <td>${formatCurrency(r.revenueFacebook)}</td>
+      <td>${formatCurrency(r.revenueShopify)}</td>
+      <td>${formatNumber(r.roasFacebook)}</td>
+      <td>${formatNumber(r.roasShopify)}</td>
       <td>${formatNumber(r.ordersNew)}</td>
       <td>${formatNumber(r.ordersReturning)}</td>
-      <td>${formatCurrencyRounded(r.cacNewCustomer)}</td>
-      <td>${formatCurrencyRounded(r.cacReturning)}</td>
-      <td>${formatNumber(r.sessions)}</td>
+      <td>${formatCurrency(r.cacNewCustomer)}</td>
+      <td>${formatCurrency(r.cacReturning)}</td>
     </tr>`).join('');
   return `
     <div class="data-section">
       <h3>Facebook Campaigns — ${title}</h3>
       <div style="overflow-x:auto"><table class="data-table"><thead><tr>
         <th>Campaign Name</th>
+        <th>Sessions</th>
+        <th>Orders</th>
         <th>Spend</th>
         <th>Revenue Facebook Ads</th>
-        <th>Revenue Shopify LNDC</th>
-        <th>Revenue Shopify ANY</th>
-        <th>ROAS Shopify LND</th>
-        <th>ROAS Shopify ANY</th>
+        <th>Revenue Shopify</th>
         <th>ROAS Facebook</th>
-        <th>Orders</th>
+        <th>ROAS Shopify</th>
         <th>Orders New Customers</th>
         <th>Orders Returning</th>
         <th>CAC NewCustomer</th>
         <th>CAC Returning</th>
-        <th>Sessions</th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
     </div>`;
-}
-
-function setFbFilter(filter) {
-  data.fbFilterMain = filter;
-  if (document.getElementById('fb-tables')) renderFbTables();
-}
-
-function mapCampaignCollection(name) {
-  const lower = String(name || '').toLowerCase();
-  if (!lower) return 'OTHER';
-  if (lower.includes('scalp')) return 'SCALP';
-  if (lower.includes('clear')) return 'CLEAR';
-  if (lower.includes('bio')) return 'BIO';
-  if (lower.includes('sebo')) return 'SEBO';
-  if (lower.includes('pso')) return 'PSO';
-  if (lower.includes('calm')) return 'CALM';
-  return 'OTHER';
 }
 
 function escapeHtml(text) {
@@ -1199,14 +1107,6 @@ function formatCurrency(value) {
 
 function formatNumber(value) {
   return value == null ? '—' : Number(value).toLocaleString('en-US');
-}
-
-function formatCurrencyRounded(value) {
-  return value == null ? '—' : '₪' + Math.round(Number(value)).toLocaleString('en-US');
-}
-
-function formatRoas(value) {
-  return value == null ? '—' : Number(value).toFixed(2);
 }
 
 function showPage(pageId) {
