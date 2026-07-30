@@ -54,10 +54,10 @@
   select:focus { outline: none; border-color: #4f46e5; }
   select option { background: #141824; }
 
-  .preview-wrap { margin-top: 14px; overflow-x: auto; max-height: 160px; overflow-y: auto; }
-  .preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  .preview-table th { background: #1e2a3a; color: #94a3b8; padding: 6px 10px; text-align: right; font-weight: 600; position: sticky; top: 0; }
-  .preview-table td { padding: 5px 10px; border-bottom: 1px solid #1a2030; color: #64748b; }
+  .preview-wrap { margin-top: 14px; overflow-x: auto; max-height: 160px; overflow-y: auto; text-align: center; }
+  .preview-table { width: auto; margin: 0 auto; border-collapse: collapse; font-size: 11px; }
+  .preview-table th { background: #1e2a3a; color: #94a3b8; padding: 6px 10px; text-align: center; font-weight: 600; position: sticky; top: 0; }
+  .preview-table td { padding: 5px 10px; border-bottom: 1px solid #1a2030; color: #64748b; text-align: center; }
   .preview-table tr:nth-child(even) td { background: #0f1520; }
   .col-highlight { color: #a5b4fc !important; font-weight: 600; }
 
@@ -158,12 +158,20 @@
   .pie-svg { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
   .chart-note { margin-top: 12px; color: #94a3b8; font-size: 12px; line-height: 1.4; }
 
-  .data-section h3 { font-size: 14px; margin-bottom: 10px; color: #fff; }
-  .data-table { width: 100%; min-width: 1600px; border-collapse: collapse; margin-top: 10px; direction: rtl; }
-  .data-table th, .data-table td { border: 1px solid #1e2a3a; padding: 10px; font-size: 12px; color: #e2e8f0; text-align: right; }
+  .data-section {
+    width: 100%;
+    display: block;
+    margin-top: 30px;
+  }
+  .data-section h3 { font-size: 14px; margin-bottom: 12px; color: #fff; text-align: center; }
+  .table-wrapper { overflow-x: auto; margin-bottom: 18px; display: block; }
+  .data-table { width: auto; max-width: 100%; margin: 0 auto; border-collapse: collapse; margin-top: 0; direction: rtl; table-layout: auto; }
+  .data-table th, .data-table td { border: 1px solid #1e2a3a; padding: 10px; font-size: 12px; color: #e2e8f0; text-align: center; word-break: break-word; white-space: normal; }
   .data-table th { background: #1e2a3a; color: #94a3b8; }
   .data-table tbody tr:nth-child(even) { background: #0f1520; }
   .data-table tbody tr:hover { background: #111827; }
+  .data-table .col-spend, .data-table .col-orders, .data-table .col-sessions { white-space: nowrap; min-width: 120px; }
+  .data-table .col-campaign-name { min-width: 220px; }
   #page-ppc .container { max-width: 1600px; }
 
   #page-facebook .container { max-width: 1600px; }
@@ -234,16 +242,39 @@
     </div>
   </div>
 
+  <!-- PPC GOOGLE -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num" id="num-ppc">3</div>
+      <div style="flex:1">
+        <div class="step-title">📌 Performance Marketing Channel</div>
+        <div class="step-sub">העלה את הקובץ של CLAUDE CODE ALE Performance by marketing channel כדי לראות טבלאות Google Campaigns</div>
+      </div>
+      <label class="upload-btn" id="btn-ppc">
+        📂 העלה קובץ שופיפיי
+        <input type="file" id="file-ppc" accept=".xlsx,.xls,.csv">
+      </label>
+    </div>
+    <div class="mapper visible" id="mapper-ppc">
+      <div class="mapper-grid">
+        <div class="mapper-row">
+          <div class="mapper-label">קובץ CLAUDE<span>הקובץ חייב להכיל את המילים CLAUDE CODE ALE Performance by marketing channel</span></div>
+        </div>
+      </div>
+      <div class="preview-wrap"><table class="preview-table" id="prev-ppc"></table></div>
+    </div>
+  </div>
+
   <!-- CUSTOMERS -->
   <div class="step">
     <div class="step-header">
-      <div class="step-num" id="num-cu">3</div>
+      <div class="step-num" id="num-cu">4</div>
       <div style="flex:1">
         <div class="step-title">👥 New vs Returning Customers</div>
         <div class="step-sub">קובץ לקוחות חדשים מול חוזרים (Shopify)</div>
       </div>
       <label class="upload-btn" id="btn-cu">
-        📂 העלה קובץ
+        📂 העלה קובץ שופיפיי
         <input type="file" id="file-cu" accept=".xlsx,.xls,.csv">
       </label>
     </div>
@@ -275,20 +306,8 @@
         <div class="step-num">1</div>
         <div style="flex:1">
           <div class="step-title">📌 PPC GOOGLE</div>
-          <div class="step-sub">העלה את הקובץ של CLAUDE CODE ALE Performance by marketing channel כדי לראות טבלאות Google Campaigns</div>
+          <div class="step-sub">כעת העלאת קובץ ה-PPC מתבצעת בדף ה-Overview. כאן יוצגו תוצאות ודוחות עבור הקובץ שהוזן.</div>
         </div>
-        <label class="upload-btn" id="btn-ppc">
-          📂 העלה קובץ CLAUDE
-          <input type="file" id="file-ppc" accept=".xlsx,.xls,.csv">
-        </label>
-      </div>
-      <div class="mapper visible" id="mapper-ppc">
-        <div class="mapper-grid">
-          <div class="mapper-row">
-            <div class="mapper-label">קובץ CLAUDE<span>הקובץ חייב להכיל את המילים CLAUDE CODE ALE Performance by marketing channel</span></div>
-          </div>
-        </div>
-        <div class="preview-wrap"><table class="preview-table" id="prev-ppc"></table></div>
       </div>
     </div>
     <div id="ppc-tables" class="data-section"></div>
@@ -679,7 +698,8 @@ function renderPieCard(title, items, subtitle) {
     return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-note">לא נמצאו נתונים מתאימים להצגה.</div></div>`;
   }
   const total = items.reduce((sum, item) => sum + item.value, 0);
-  return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-subtitle">${subtitle}</div><div class="chart-total">TOTAL NET SALES: ₪${Number(total).toFixed(0)}</div>${renderPieSvg(items, total)}${renderLegend(items, total)}</div>`;
+  const totalLabel = title.toLowerCase().includes('spend') ? 'TOTAL SPEND' : 'TOTAL NET SALES';
+  return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-subtitle">${subtitle}</div><div class="chart-total">${totalLabel}: ₪${Number(total).toFixed(0)}</div>${renderPieSvg(items, total)}${renderLegend(items, total)}</div>`;
 }
 
 function renderSimplePieCard(title, value, subtitle) {
@@ -696,6 +716,14 @@ function renderPieSvg(items, total) {
     'bio balance': '#8B5CF6',
     't-zone': '#F9A8D4',
     pso: '#BE185D',
+    pmax: '#F59E0B',
+    shopping: '#22C55E',
+    search: '#3B82F6',
+    other: '#6D28D9',
+    cold: '#10B981',
+    warm: '#3B82F6',
+    hot: '#EF4444',
+    special: '#8B5CF6',
   };
   const defaultColors = ['#4f46e5', '#22c55e', '#3b82f6', '#8b5cf6', '#14b8a6', '#f59e0b'];
   const radius = 90;
@@ -725,6 +753,14 @@ function renderLegend(items, total) {
     'bio balance': '#8B5CF6',
     't-zone': '#F9A8D4',
     pso: '#BE185D',
+    pmax: '#F59E0B',
+    shopping: '#22C55E',
+    search: '#3B82F6',
+    other: '#6D28D9',
+    cold: '#10B981',
+    warm: '#3B82F6',
+    hot: '#EF4444',
+    special: '#8B5CF6',
   };
   return `<div class="pie-legend">${items.map((item) => {
     const color = colorMap[item.key] || '#94a3b8';
@@ -876,7 +912,14 @@ function renderPpcTables() {
     return renderGoogleTableSection(title, groups[key]);
   }).join('');
 
-  container.innerHTML = sectionHtml;
+  const spendData = ['pmax','shopping','search','other'].map(key => ({
+    key,
+    label: key === 'pmax' ? 'PMAX' : key === 'shopping' ? 'SHOPPING' : key === 'search' ? 'SEARCH' : 'OTHER',
+    value: Math.max(0, groups[key].reduce((sum, item) => sum + (item.spend || 0), 0)),
+  })).filter(item => item.value > 0);
+  const spendChart = spendData.length ? `<div class="chart-grid">${renderPieCard('Spend Distribution — Google PPC', spendData, 'חלוקת Spend בין PMAX, SHOPPING, SEARCH ו-OTHER')}</div>` : '';
+
+  container.innerHTML = sectionHtml + spendChart;
 }
 
 function renderGoogleTableSection(title, rows) {
@@ -885,10 +928,10 @@ function renderGoogleTableSection(title, rows) {
   }
   const rowsHtml = rows.map(r => `
     <tr>
-      <td>${escapeHtml(r.campaignName)}</td>
-      <td>${formatNumber(r.sessions)}</td>
-      <td>${formatNumber(r.orders)}</td>
-      <td>${formatCurrencyRounded(r.spend)}</td>
+      <td class="col-campaign-name">${escapeHtml(r.campaignName)}</td>
+      <td class="col-sessions">${formatNumber(r.sessions)}</td>
+      <td class="col-orders">${formatNumber(r.orders)}</td>
+      <td class="col-spend">${formatCurrencyRounded(r.spend)}</td>
       <td>${formatCurrencyRounded(r.revenueGoogleAds)}</td>
       <td>${formatCurrencyRounded(r.revenueShopify)}</td>
       <td>${formatRoas(r.roasGoogle)}</td>
@@ -901,11 +944,11 @@ function renderGoogleTableSection(title, rows) {
   return `
     <div class="data-section">
       <h3>Google Campaigns — ${title}</h3>
-      <div style="overflow-x:auto"><table class="data-table"><thead><tr>
-        <th>Campaign Name</th>
-        <th>Sessions</th>
-        <th>Orders</th>
-        <th>Spend</th>
+      <div class="table-wrapper"><table class="data-table"><thead><tr>
+        <th class="col-campaign-name">Campaign Name</th>
+        <th class="col-sessions">Sessions</th>
+        <th class="col-orders">Orders</th>
+        <th class="col-spend">Spend</th>
         <th>Revenue Google Ads</th>
         <th>Revenue Shopify</th>
         <th>ROAS Google</th>
@@ -1005,7 +1048,15 @@ function renderFbTables() {
     const title = k.toUpperCase();
     return renderFacebookTableSection(title, groups[k]);
   }).join('');
-  container.innerHTML = filterControls + sectionHtml;
+
+  const spendData = ['cold','warm','hot','special'].map(key => ({
+    key,
+    label: key.toUpperCase(),
+    value: Math.max(0, groups[key].reduce((sum, item) => sum + (item.spend || 0), 0)),
+  })).filter(item => item.value > 0);
+  const spendChart = spendData.length ? `<div class="chart-grid">${renderPieCard('Spend Distribution — Facebook PPC', spendData, 'חלוקת Spend בין COLD, WARM, HOT ו-SPECIAL')}</div>` : '';
+
+  container.innerHTML = filterControls + sectionHtml + spendChart;
 }
 
 function setProductFilter(filter) {
@@ -1141,39 +1192,39 @@ function renderFacebookTableSection(title, rows) {
 
   const rowsHtml = filteredRows.map(r => `
     <tr>
-      <td>${escapeHtml(r.campaignName)}</td>
-      <td>${formatCurrencyRounded(r.spend)}</td>
+      <td class="col-campaign-name">${escapeHtml(r.campaignName)}</td>
+      <td class="col-spend">${formatCurrencyRounded(r.spend)}</td>
       <td>${formatCurrencyRounded(r.revenueFacebook)}</td>
       <td>${formatCurrencyRounded(r.totalSalesLnd)}</td>
       <td>${formatCurrencyRounded(r.revenueShopifyAny)}</td>
       <td>${formatRoas(r.roasShopifyLnd)}</td>
       <td>${formatRoas(r.roasShopifyAny)}</td>
       <td>${formatRoas(r.roasFacebook)}</td>
-      <td>${formatNumber(r.orders)}</td>
+      <td class="col-orders">${formatNumber(r.orders)}</td>
       <td>${formatNumber(r.ordersNew)}</td>
       <td>${formatNumber(r.ordersReturning)}</td>
       <td>${formatCurrencyRounded(r.cacNewCustomer)}</td>
       <td>${formatCurrencyRounded(r.cacReturning)}</td>
-      <td>${formatNumber(r.sessions)}</td>
+      <td class="col-sessions">${formatNumber(r.sessions)}</td>
     </tr>`).join('');
   return `
     <div class="data-section">
       <h3>Facebook Campaigns — ${title}</h3>
-      <div style="overflow-x:auto"><table class="data-table"><thead><tr>
-        <th>Campaign Name</th>
-        <th>Spend</th>
+      <div class="table-wrapper"><table class="data-table"><thead><tr>
+        <th class="col-campaign-name">Campaign Name</th>
+        <th class="col-spend">Spend</th>
         <th>Revenue Facebook Ads</th>
         <th>Revenue Shopify LNDC</th>
         <th>Revenue Shopify ANY</th>
         <th>ROAS Shopify LND</th>
         <th>ROAS Shopify ANY</th>
         <th>ROAS Facebook</th>
-        <th>Orders</th>
+        <th class="col-orders">Orders</th>
         <th>Orders New Customers</th>
         <th>Orders Returning</th>
         <th>CAC NewCustomer</th>
         <th>CAC Returning</th>
-        <th>Sessions</th>
+        <th class="col-sessions">Sessions</th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
     </div>`;
 }
