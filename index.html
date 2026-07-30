@@ -1292,14 +1292,23 @@ function showPage(pageId) {
 }
 
 // ── Compute ───────────────────────────────────────────────────────────────────
-function sumCol(rows, col) {
+function sumCol(rows, col, shouldSkipRow = () => false) {
   let t = 0;
   for (let i = 1; i < rows.length; i++) {
+    if (shouldSkipRow(rows[i])) continue;
     const v = parseNumber(rows[i][col]);
     if (v !== null) t += v;
   }
   return t;
 }
+
+function isGoogleSummaryRow(row) {
+  const label = String(row[0] || '').trim().toLowerCase();
+  if (!label) return false;
+  const normalized = label.replace(/[:\s]+/g, ' ').trim();
+  return normalized.startsWith('total ') || normalized.startsWith('total:') || normalized.includes(' total');
+}
+
 function sumByType(rows, typeCol, typeVal, valCol) {
   let t = 0, found = false;
   const normalizedType = String(typeVal || '').trim().toLowerCase();
@@ -1323,7 +1332,7 @@ function generateReport() {
   const nVal = data.cu.newVal;
   const rVal = data.cu.retVal;
 
-  const googleSpend = sumCol(data.google.rows, gC);
+  const googleSpend = sumCol(data.google.rows, gC, isGoogleSummaryRow);
   const fbSpend     = sumCol(data.fb.rows, fbS);
   const tiktokSpend = null;
   const totalSpend  = googleSpend + fbSpend + (tiktokSpend || 0);
