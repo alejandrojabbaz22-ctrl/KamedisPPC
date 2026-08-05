@@ -1250,8 +1250,15 @@ function renderProductSection(title, rows) {
   if (!rows.length) {
     return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו מוצרים בסדרה זו.</div></div>`;
   }
+  const rowsForSort = rows.map(r => ({ ...r }));
+  if (title === 'ALL COLLECTIONS') {
+    const totalSalesForPercent = rowsForSort.reduce((sum, r) => sum + (r.netSales || 0), 0);
+    rowsForSort.forEach(r => {
+      r.percentSales = totalSalesForPercent ? ((r.netSales || 0) / totalSalesForPercent) * 100 : 0;
+    });
+  }
   const sortState = getProductSortState(title);
-  const rowsToRender = sortState ? sortGoogleRows(rows, sortState.column, sortState.direction) : rows;
+  const rowsToRender = sortState ? sortGoogleRows(rowsForSort, sortState.column, sortState.direction) : rowsForSort;
   let totalItems = 0;
   let totalSales = 0;
   const rowsHtml = rowsToRender.map(r => {
@@ -1263,6 +1270,7 @@ function renderProductSection(title, rows) {
       <td>${formatNumber(r.itemsSold)}</td>
       <td>${formatCurrency(r.netSales)}</td>
       <td>${escapeHtml(r.newReturnLabel)}</td>
+      ${title === 'ALL COLLECTIONS' ? `<td>${formatPercent(r.percentSales)}</td>` : ''}
     </tr>`;
   }).join('');
   return `
@@ -1273,12 +1281,14 @@ function renderProductSection(title, rows) {
         <th class="sortable" onclick="setProductSortState('${title}','itemsSold')">Items Sold${getProductSortIndicator(title, 'itemsSold')}</th>
         <th class="sortable" onclick="setProductSortState('${title}','netSales')">Net Sales${getProductSortIndicator(title, 'netSales')}</th>
         <th class="sortable" onclick="setProductSortState('${title}','newReturnLabel')">New/Returning${getProductSortIndicator(title, 'newReturnLabel')}</th>
+        ${title === 'ALL COLLECTIONS' ? `<th class="sortable" onclick="setProductSortState('${title}','percentSales')">% NET SALES${getProductSortIndicator(title, 'percentSales')}</th>` : ''}
       </tr></thead><tbody>${rowsHtml}
         <tr style="font-weight:700; border-top:2px solid #4f46e5;">
           <td>TOPLAM</td>
           <td>${formatNumber(totalItems)}</td>
           <td>${formatCurrency(totalSales)}</td>
           <td>—</td>
+          ${title === 'ALL COLLECTIONS' ? `<td>${formatPercent(100)}</td>` : ''}
         </tr>
       </tbody></table></div>
     </div>`;
@@ -1400,6 +1410,11 @@ function formatCurrencyRounded(value) {
 
 function formatRoas(value) {
   return value == null ? '—' : Number(value).toFixed(2);
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+  return Number(value).toFixed(1) + '%';
 }
 
 function showPage(pageId) {
