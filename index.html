@@ -60,6 +60,9 @@
   .preview-table td { padding: 5px 10px; border-bottom: 1px solid #1a2030; color: #64748b; text-align: center; }
   .preview-table tr:nth-child(even) td { background: #0f1520; }
   .col-highlight { color: #a5b4fc !important; font-weight: 600; }
+  .sortable { cursor: pointer; white-space: nowrap; }
+  .sort-indicator { font-size: 0.8em; margin-left: 6px; color: #94a3b8; }
+  .sort-indicator.active { color: #ffffff; }
 
   .btn-generate {
     display: block; width: 100%; margin-top: 24px;
@@ -575,9 +578,11 @@ document.getElementById('file-ppc').addEventListener('change', async (e) => {
   const ordersIdx = findHeaderIndex(headers, ['orders','order']);
   const revenueShopifyIdx = findHeaderIndex(headers, ['revenue shopify','shopify revenue','revenue','sales']);
   const totalSalesLastIdx = findHeaderIndex(headers, ['total sales (last non-direct click)','net sales (last non-direct click)','total sales last non-direct click','net sales last non-direct click','last non-direct click','last_non_direct_click'], -1);
+  const totalSalesFirstIdx = findHeaderIndex(headers, ['total sales (first click)','net sales (first click)','total sales first click','first click','first_click','total sales (first_click)','total sales first click'], -1);
   const totalSalesAnyIdx = findHeaderIndex(headers, ['total sales (any click)','total sales any click','total sales (any_click)','any click','any_click','total sales (any)'], -1);
   const ordersNewIdx = findHeaderIndex(headers, ['new orders','orders new','new customer','orders new customers','new customers']);
   const ordersReturningIdx = findHeaderIndex(headers, ['returning orders','orders returning','returning customer','returning customers']);
+  const ordersReturningFirstIdx = findHeaderIndex(headers, ['returning customers (first click)','returning customers first click','returning customer (first click)','returning customer first click'], -1);
 
   data.ppc = {
     rows,
@@ -587,9 +592,11 @@ document.getElementById('file-ppc').addEventListener('change', async (e) => {
     ordersIdx: ordersIdx !== -1 ? ordersIdx : 3,
     revenueShopifyIdx: revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12,
     totalSalesLastIdx: totalSalesLastIdx !== -1 ? totalSalesLastIdx : (revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12),
+    totalSalesFirstIdx: totalSalesFirstIdx !== -1 ? totalSalesFirstIdx : (revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12),
     totalSalesAnyIdx: totalSalesAnyIdx !== -1 ? totalSalesAnyIdx : (revenueShopifyIdx !== -1 ? revenueShopifyIdx : 12),
     ordersNewIdx: ordersNewIdx !== -1 ? ordersNewIdx : 6,
     ordersReturningIdx: ordersReturningIdx !== -1 ? ordersReturningIdx : 9,
+    ordersReturningFirstIdx: ordersReturningFirstIdx !== -1 ? ordersReturningFirstIdx : (ordersReturningIdx !== -1 ? ordersReturningIdx : 9),
   };
 
   document.getElementById('btn-ppc').className = 'upload-btn loaded';
@@ -823,6 +830,86 @@ function normalizeCampaignName(name) {
     .replace(/[^a-z0-9א-ת\s\-]/g, '');
 }
 
+function sortGoogleRows(rows, column, direction) {
+  const dir = direction === 'desc' ? -1 : 1;
+  const stringColumns = ['campaignName', 'productName', 'newReturnLabel'];
+  const compare = (a, b) => {
+    const aVal = a[column];
+    const bVal = b[column];
+    const aEmpty = aVal === null || aVal === undefined;
+    const bEmpty = bVal === null || bVal === undefined;
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+    if (stringColumns.includes(column)) {
+      const aText = String(aVal).toLowerCase();
+      const bText = String(bVal).toLowerCase();
+      return aText.localeCompare(bText) * dir;
+    }
+    const aNum = Number(aVal);
+    const bNum = Number(bVal);
+    if (Number.isNaN(aNum) || Number.isNaN(bNum)) {
+      const aText = String(aVal).toLowerCase();
+      const bText = String(bVal).toLowerCase();
+      return aText.localeCompare(bText) * dir;
+    }
+    return (aNum - bNum) * dir;
+  };
+  return [...rows].sort(compare);
+}
+
+function getGoogleSortState(title) {
+  if (!data.ppc) return null;
+  data.ppc.sortState = data.ppc.sortState || {};
+  return data.ppc.sortState[title] || null;
+}
+
+function setGoogleSortState(title, column) {
+  if (!data.ppc) return;
+  data.ppc.sortState = data.ppc.sortState || {};
+  const current = data.ppc.sortState[title] || { column: null, direction: 'desc' };
+  if (current.column === column) {
+    current.direction = current.direction === 'desc' ? 'asc' : 'desc';
+  } else {
+    current.column = column;
+    current.direction = 'desc';
+  }
+  data.ppc.sortState[title] = current;
+  renderPpcTables();
+}
+
+function getGoogleSortIndicator(title, column) {
+  const state = getGoogleSortState(title);
+  if (!state || state.column !== column) return '';
+  return `<span class="sort-indicator active">${state.direction === 'asc' ? '▲' : '▼'}</span>`;
+}
+
+function getFbSortState(title) {
+  if (!data.fb) return null;
+  data.fb.sortState = data.fb.sortState || {};
+  return data.fb.sortState[title] || null;
+}
+
+function setFbSortState(title, column) {
+  if (!data.fb) return;
+  data.fb.sortState = data.fb.sortState || {};
+  const current = data.fb.sortState[title] || { column: null, direction: 'desc' };
+  if (current.column === column) {
+    current.direction = current.direction === 'desc' ? 'asc' : 'desc';
+  } else {
+    current.column = column;
+    current.direction = 'desc';
+  }
+  data.fb.sortState[title] = current;
+  renderFbTables();
+}
+
+function getFbSortIndicator(title, column) {
+  const state = getFbSortState(title);
+  if (!state || state.column !== column) return '';
+  return `<span class="sort-indicator active">${state.direction === 'asc' ? '▲' : '▼'}</span>`;
+}
+
 function findGoogleMatch(claudeName, googleRows, googleIdx) {
   if (!claudeName || !googleRows) return null;
   const normalized = normalizeCampaignName(claudeName);
@@ -875,14 +962,14 @@ function renderPpcTables() {
       campaignName,
       sessions: parseNumber(row[data.ppc.sessionsIdx]),
       orders: parseNumber(row[data.ppc.ordersIdx]),
-        spend: null,
-        revenueGoogleAds: null,
-        // For Google PPC we prefer TOTAL SALES (last non-direct click)
-        revenueShopify: parseNumber(row[data.ppc.totalSalesLastIdx] ?? row[data.ppc.revenueShopifyIdx]),
+      spend: null,
+      revenueGoogleAds: null,
+      // For Google PPC we prefer TOTAL SALES (first click)
+      revenueShopify: parseNumber(row[data.ppc.totalSalesFirstIdx] ?? row[data.ppc.totalSalesLastIdx] ?? row[data.ppc.revenueShopifyIdx]),
       roasGoogle: null,
       roasShopify: null,
       ordersNew: parseNumber(row[data.ppc.ordersNewIdx]),
-      ordersReturning: parseNumber(row[data.ppc.ordersReturningIdx]),
+      ordersReturning: parseNumber(row[data.ppc.ordersReturningFirstIdx] ?? row[data.ppc.ordersReturningIdx]),
       cacNewCustomer: null,
       cacReturning: null,
     };
@@ -926,7 +1013,9 @@ function renderGoogleTableSection(title, rows) {
   if (!rows.length) {
     return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו קמפיינים מתאימים.</div></div>`;
   }
-  const rowsHtml = rows.map(r => `
+  const sortState = getGoogleSortState(title);
+  const rowsToRender = sortState ? sortGoogleRows(rows, sortState.column, sortState.direction) : rows;
+  const rowsHtml = rowsToRender.map(r => `
     <tr>
       <td class="col-campaign-name">${escapeHtml(r.campaignName)}</td>
       <td class="col-sessions">${formatNumber(r.sessions)}</td>
@@ -941,22 +1030,23 @@ function renderGoogleTableSection(title, rows) {
       <td>${formatCurrencyRounded(r.cacNewCustomer)}</td>
       <td>${formatCurrencyRounded(r.cacReturning)}</td>
     </tr>`).join('');
+  const revenueShopifyHeader = title === 'SEARCH' ? 'Revenue Shopify FC' : 'Revenue Shopify';
   return `
     <div class="data-section">
       <h3>Google Campaigns — ${title}</h3>
       <div class="table-wrapper"><table class="data-table"><thead><tr>
-        <th class="col-campaign-name">Campaign Name</th>
-        <th class="col-sessions">Sessions</th>
-        <th class="col-orders">Orders</th>
-        <th class="col-spend">Spend</th>
-        <th>Revenue Google Ads</th>
-        <th>Revenue Shopify</th>
-        <th>ROAS Google</th>
-        <th>ROAS Shopify</th>
-        <th>Orders New Customers</th>
-        <th>Orders Returning</th>
-        <th>CAC NewCustomer</th>
-        <th>CAC Returning</th>
+        <th class="sortable col-campaign-name" onclick="setGoogleSortState('${title}','campaignName')">Campaign Name${getGoogleSortIndicator(title, 'campaignName')}</th>
+        <th class="sortable col-sessions" onclick="setGoogleSortState('${title}','sessions')">Sessions${getGoogleSortIndicator(title, 'sessions')}</th>
+        <th class="sortable col-orders" onclick="setGoogleSortState('${title}','orders')">Orders${getGoogleSortIndicator(title, 'orders')}</th>
+        <th class="sortable col-spend" onclick="setGoogleSortState('${title}','spend')">Spend${getGoogleSortIndicator(title, 'spend')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','revenueGoogleAds')">Revenue Google Ads${getGoogleSortIndicator(title, 'revenueGoogleAds')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','revenueShopify')">${revenueShopifyHeader}${getGoogleSortIndicator(title, 'revenueShopify')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','roasGoogle')">ROAS Google${getGoogleSortIndicator(title, 'roasGoogle')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','roasShopify')">ROAS Shopify${getGoogleSortIndicator(title, 'roasShopify')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','ordersNew')">Orders New Customers${getGoogleSortIndicator(title, 'ordersNew')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','ordersReturning')">Orders Returning${getGoogleSortIndicator(title, 'ordersReturning')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','cacNewCustomer')">CAC NewCustomer${getGoogleSortIndicator(title, 'cacNewCustomer')}</th>
+        <th class="sortable" onclick="setGoogleSortState('${title}','cacReturning')">CAC Returning${getGoogleSortIndicator(title, 'cacReturning')}</th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
     </div>`;
 }
@@ -1105,12 +1195,28 @@ function renderProductTables() {
     else if (nameLower.includes('pso')) groups.pso.push(item);
   }
 
-  const sectionHtml = Object.entries(groups).map(([key, items]) => {
+  const allItems = [];
+  Object.values(groups).forEach(items => allItems.push(...items));
+
+  const combinedItems = data.productFilter === 'ALL_TOGETHER'
+    ? aggregateProductRows(allItems)
+    : allItems.slice();
+  combinedItems.sort((a, b) => (b.netSales || 0) - (a.netSales || 0));
+  const combinedFiltered = combinedItems.filter(item => {
+    if (data.productFilter === 'ALL' || data.productFilter === 'ALL_TOGETHER') return true;
+    return item.newReturnLabel === data.productFilter;
+  });
+
+  const sectionHtml = ['ALL COLLECTIONS', ...Object.entries(groups).map(([key]) => key === 'bio balance' ? 'BIO BALANCE' : key.toUpperCase())].map((title, index) => {
+    if (title === 'ALL COLLECTIONS') {
+      return renderProductSection(title, combinedFiltered);
+    }
+    const key = title === 'BIO BALANCE' ? 'bio balance' : title.toLowerCase();
+    let items = groups[key];
     if (data.productFilter === 'ALL_TOGETHER') {
       items = aggregateProductRows(items);
     }
     items.sort((a, b) => (b.netSales || 0) - (a.netSales || 0));
-    const title = key === 'bio balance' ? 'BIO BALANCE' : key.toUpperCase();
     const filtered = items.filter(item => {
       if (data.productFilter === 'ALL' || data.productFilter === 'ALL_TOGETHER') return true;
       return item.newReturnLabel === data.productFilter;
@@ -1144,9 +1250,11 @@ function renderProductSection(title, rows) {
   if (!rows.length) {
     return `<div class="data-section"><h3>${title}</h3><div style="color:#94a3b8">לא נמצאו מוצרים בסדרה זו.</div></div>`;
   }
+  const sortState = getProductSortState(title);
+  const rowsToRender = sortState ? sortGoogleRows(rows, sortState.column, sortState.direction) : rows;
   let totalItems = 0;
   let totalSales = 0;
-  const rowsHtml = rows.map(r => {
+  const rowsHtml = rowsToRender.map(r => {
     totalItems += r.itemsSold || 0;
     totalSales += r.netSales || 0;
     return `
@@ -1161,10 +1269,10 @@ function renderProductSection(title, rows) {
     <div class="data-section">
       <h3>Products Performance — ${title}</h3>
       <div style="overflow-x:auto"><table class="data-table"><thead><tr>
-        <th>Product Name</th>
-        <th>Items Sold</th>
-        <th>Net Sales</th>
-        <th>New/Returning</th>
+        <th class="sortable" onclick="setProductSortState('${title}','productName')">Product Name${getProductSortIndicator(title, 'productName')}</th>
+        <th class="sortable" onclick="setProductSortState('${title}','itemsSold')">Items Sold${getProductSortIndicator(title, 'itemsSold')}</th>
+        <th class="sortable" onclick="setProductSortState('${title}','netSales')">Net Sales${getProductSortIndicator(title, 'netSales')}</th>
+        <th class="sortable" onclick="setProductSortState('${title}','newReturnLabel')">New/Returning${getProductSortIndicator(title, 'newReturnLabel')}</th>
       </tr></thead><tbody>${rowsHtml}
         <tr style="font-weight:700; border-top:2px solid #4f46e5;">
           <td>TOPLAM</td>
@@ -1190,7 +1298,9 @@ function renderFacebookTableSection(title, rows) {
   // filter rows by collection if a filter is active (main filter)
   const filteredRows = (currentFilter && currentFilter !== 'ALL') ? rows.filter(r => mapCampaignCollection(r.campaignName) === currentFilter) : rows;
 
-  const rowsHtml = filteredRows.map(r => `
+  const sortState = getFbSortState(title);
+  const rowsToRender = sortState ? sortGoogleRows(filteredRows, sortState.column, sortState.direction) : filteredRows;
+  const rowsHtml = rowsToRender.map(r => `
     <tr>
       <td class="col-campaign-name">${escapeHtml(r.campaignName)}</td>
       <td class="col-spend">${formatCurrencyRounded(r.spend)}</td>
@@ -1211,20 +1321,20 @@ function renderFacebookTableSection(title, rows) {
     <div class="data-section">
       <h3>Facebook Campaigns — ${title}</h3>
       <div class="table-wrapper"><table class="data-table"><thead><tr>
-        <th class="col-campaign-name">Campaign Name</th>
-        <th class="col-spend">Spend</th>
-        <th>Revenue Facebook Ads</th>
-        <th>Revenue Shopify LNDC</th>
-        <th>Revenue Shopify ANY</th>
-        <th>ROAS Shopify LND</th>
-        <th>ROAS Shopify ANY</th>
-        <th>ROAS Facebook</th>
-        <th class="col-orders">Orders</th>
-        <th>Orders New Customers</th>
-        <th>Orders Returning</th>
-        <th>CAC NewCustomer</th>
-        <th>CAC Returning</th>
-        <th class="col-sessions">Sessions</th>
+        <th class="sortable col-campaign-name" onclick="setFbSortState('${title}','campaignName')">Campaign Name${getFbSortIndicator(title, 'campaignName')}</th>
+        <th class="sortable col-spend" onclick="setFbSortState('${title}','spend')">Spend${getFbSortIndicator(title, 'spend')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','revenueFacebook')">Revenue Facebook Ads${getFbSortIndicator(title, 'revenueFacebook')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','totalSalesLnd')">Revenue Shopify LNDC${getFbSortIndicator(title, 'totalSalesLnd')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','revenueShopifyAny')">Revenue Shopify ANY${getFbSortIndicator(title, 'revenueShopifyAny')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','roasShopifyLnd')">ROAS Shopify LND${getFbSortIndicator(title, 'roasShopifyLnd')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','roasShopifyAny')">ROAS Shopify ANY${getFbSortIndicator(title, 'roasShopifyAny')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','roasFacebook')">ROAS Facebook${getFbSortIndicator(title, 'roasFacebook')}</th>
+        <th class="sortable col-orders" onclick="setFbSortState('${title}','orders')">Orders${getFbSortIndicator(title, 'orders')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','ordersNew')">Orders New Customers${getFbSortIndicator(title, 'ordersNew')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','ordersReturning')">Orders Returning${getFbSortIndicator(title, 'ordersReturning')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','cacNewCustomer')">CAC NewCustomer${getFbSortIndicator(title, 'cacNewCustomer')}</th>
+        <th class="sortable" onclick="setFbSortState('${title}','cacReturning')">CAC Returning${getFbSortIndicator(title, 'cacReturning')}</th>
+        <th class="sortable col-sessions" onclick="setFbSortState('${title}','sessions')">Sessions${getFbSortIndicator(title, 'sessions')}</th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
     </div>`;
 }
@@ -1232,6 +1342,32 @@ function renderFacebookTableSection(title, rows) {
 function setFbFilter(filter) {
   data.fbFilterMain = filter;
   if (document.getElementById('fb-tables')) renderFbTables();
+}
+
+function getProductSortState(title) {
+  if (!data.products) return null;
+  data.products.sortState = data.products.sortState || {};
+  return data.products.sortState[title] || null;
+}
+
+function setProductSortState(title, column) {
+  if (!data.products) return;
+  data.products.sortState = data.products.sortState || {};
+  const current = data.products.sortState[title] || { column: null, direction: 'desc' };
+  if (current.column === column) {
+    current.direction = current.direction === 'desc' ? 'asc' : 'desc';
+  } else {
+    current.column = column;
+    current.direction = 'desc';
+  }
+  data.products.sortState[title] = current;
+  renderProductTables();
+}
+
+function getProductSortIndicator(title, column) {
+  const state = getProductSortState(title);
+  if (!state || state.column !== column) return '';
+  return `<span class="sort-indicator active">${state.direction === 'asc' ? '▲' : '▼'}</span>`;
 }
 
 function mapCampaignCollection(name) {
